@@ -1,8 +1,6 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
-  <!-- Content Security Policy for security -->
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; manifest-src 'self';">
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -21,7 +19,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="Потужний сканер штрих-кодів та QR-кодів від Jinsovik">
+  <meta name="description" content="Сканер штрихкодів для ХШ">
   <meta name="keywords" content="сканер, штрих-код, QR-код, Jinsovik, мобільний">
   <meta name="author" content="Jinsovik">
   
@@ -217,7 +215,7 @@
     });
 </script>
     
-    // iOS viewport fix
+    <!-- iOS viewport fix -->
     function setViewportHeight() {
       let vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
