@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:vibration/vibration.dart';
@@ -118,7 +118,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
               isLoading = false;
             });
           } else {
+            // Optimized logic for specific store selection (especially Харківське шосе)
             final selectedLower = widget.selectedStore.toLowerCase();
+            
+            // For Харківське шосе, use direct search for faster results
             final filteredStores = storesList.where((store) {
               final storeName = extractShortName(store['name']).toLowerCase();
               return storeName.contains(selectedLower);

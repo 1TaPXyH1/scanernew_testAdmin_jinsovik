@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
@@ -112,7 +112,7 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
       return;
     }
 
-    // Fetch product data for Харківське шосе only
+    // Fetch product data for Харківське шосе only - optimized for speed
     try {
       final response = await http.get(Uri.parse(
         'https://static.88-198-21-139.clients.your-server.de:956/REST/hs/prices/product_new/$barcode/',
@@ -124,19 +124,24 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
             data['response'].length == 2 &&
             data['response'][1] is List) {
           final storesList = data['response'][1] as List;
-          // Only select Харківське шосе
-          final filteredStores = storesList.where((store) {
-            final storeName = (store['name']?.toString().toLowerCase()) ?? '';
-            return storeName.contains('харківське шосе');
-          }).toList();
-          if (filteredStores.isEmpty) {
+          
+          // Only select Харківське шосе - constant store filter
+          final kharkivskeShoseStore = storesList.firstWhere(
+            (store) {
+              final storeName = (store['name']?.toString().toLowerCase()) ?? '';
+              return storeName.contains('харківське шосе');
+            },
+            orElse: () => null,
+          );
+          
+          if (kharkivskeShoseStore == null) {
             setState(() {
               _hasError = true;
               _showSuccess = false;
-              _errorMessage = "Товар не знайдено";
+              _errorMessage = "Товар не знайдено в магазині Харківське шосе";
               _isScanning = false;
             });
-            await Future.delayed(const Duration(seconds: 1));
+            await Future.delayed(const Duration(milliseconds: 800)); // Faster error display
             if (!mounted) return;
             setState(() {
               _hasError = false;
@@ -144,16 +149,20 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
             });
             return;
           }
-          // Pass product info and stock to next screen - show success only for valid products
-          final hasVibrator = await Vibration.hasVibrator();
-          if (mounted && hasVibrator) {
-            Vibration.vibrate(pattern: [0, 150, 100, 150]);
-          }
+          
+          // Show success immediately for faster UX
           setState(() {
             _showSuccess = true;
             _hasError = false;
           });
-          await Future.delayed(const Duration(milliseconds: 1200));
+          
+          final hasVibrator = await Vibration.hasVibrator();
+          if (mounted && hasVibrator) {
+            Vibration.vibrate(pattern: [0, 150, 100, 150]);
+          }
+          
+          // Reduced delay for faster navigation
+          await Future.delayed(const Duration(milliseconds: 800));
           if (!mounted) return;
           Navigator.of(context).pop(barcode);
           return;

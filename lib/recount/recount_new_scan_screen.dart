@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
@@ -108,7 +108,22 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             data['response'] is List &&
             data['response'].length == 2 &&
             data['response'][1] is List) {
-          final productData = data['response'][1][0];
+          final productInfo = data['response'][0];
+          final storesList = data['response'][1] as List;
+          
+          // Only use data from Харківське шосе store - constant filter
+          final kharkivskeShoseStore = storesList.firstWhere(
+            (store) {
+              final storeName = (store['name']?.toString().toLowerCase()) ?? '';
+              return storeName.contains('харківське шосе');
+            },
+            orElse: () => null,
+          );
+          
+          if (kharkivskeShoseStore == null) {
+            _showError('Товар не знайдено в магазині Харківське шосе');
+            return;
+          }
 
           if (!mounted) return;
           final sessionManager =
@@ -120,9 +135,9 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
           setState(() {
             _currentBarcode = barcode;
-            _productName = productData['name'] ?? 'Невідомий товар';
-            _productPrice = (productData['price'] ?? 0.0).toDouble();
-            _stockCount = productData['stock_count'] ?? 0;
+            _productName = productInfo['good'] ?? 'Невідомий товар';
+            _productPrice = (productInfo['price'] ?? 0.0).toDouble();
+            _stockCount = int.tryParse(kharkivskeShoseStore['remaining'].toString()) ?? 0;
             _actualCount = existingProduct.isNotEmpty
                 ? (existingProduct['actual_count'] ?? 0)
                 : 0;
