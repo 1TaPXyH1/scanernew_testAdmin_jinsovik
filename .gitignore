@@ -2,7 +2,10 @@
 .dart_tool/
 .packages
 .pub/
-build/
+# Ignore everything in build except build/web
+/build/*
+!/build/web
+!/build/web/**
 # Web related
 web/generated_plugin_registrant.dart
 # IntelliJ related

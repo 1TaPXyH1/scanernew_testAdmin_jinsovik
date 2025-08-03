@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="uk">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -17,22 +17,174 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="A new Flutter project.">
-
-  <!-- iOS meta tags & icons -->
+  <meta name="description" content="Потужний сканер штрих-кодів та QR-кодів від Jinsovik">
+  <meta name="keywords" content="сканер, штрих-код, QR-код, Jinsovik, мобільний">
+  <meta name="author" content="Jinsovik">
+  
+  <!-- PWA meta tags -->
+  <meta name="theme-color" content="#45A1FF">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black">
-  <meta name="apple-mobile-web-app-title" content="barcode_scanner_app">
-  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+  <meta name="application-name" content="Jinsovik Сканер">
+  
+  <!-- iOS specific meta tags -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Jinsovik Сканер">
+  <meta name="format-detection" content="telephone=no">
+  
+  <!-- iOS icons -->
+  <link rel="apple-touch-icon" sizes="57x57" href="icons/Icon-72.png">
+  <link rel="apple-touch-icon" sizes="60x60" href="icons/Icon-72.png">
+  <link rel="apple-touch-icon" sizes="72x72" href="icons/Icon-72.png">
+  <link rel="apple-touch-icon" sizes="76x76" href="icons/Icon-96.png">
+  <link rel="apple-touch-icon" sizes="114x114" href="icons/Icon-128.png">
+  <link rel="apple-touch-icon" sizes="120x120" href="icons/Icon-128.png">
+  <link rel="apple-touch-icon" sizes="144x144" href="icons/Icon-144.png">
+  <link rel="apple-touch-icon" sizes="152x152" href="icons/Icon-152.png">
+  <link rel="apple-touch-icon" sizes="180x180" href="icons/Icon-192.png">
+  
+  <!-- iOS splash screens -->
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="apple-touch-startup-image" href="icons/Icon-512.png">
+  
+  <!-- Standard favicon -->
+  <link rel="icon" type="image/png" sizes="32x32" href="favicon.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="favicon.png">
+  <link rel="shortcut icon" href="favicon.png">
 
-  <!-- Favicon -->
-  <link rel="icon" type="image/png" href="favicon.png"/>
-
-  <title>barcode_scanner_app</title>
+  <title>Jinsovik Сканер</title>
   <link rel="manifest" href="manifest.json">
+  
+  <!-- Preload critical resources -->
+  <link rel="preload" href="flutter_bootstrap.js" as="script">
+  
+  <!-- Loading styles -->
+  <style>
+    body {
+      margin: 0;
+      padding: 0;
+      background-color: #121212;
+      color: white;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      overflow: hidden;
+    }
+    
+    .loading-container {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(135deg, #121212 0%, #1e1e1e 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      z-index: 9999;
+    }
+    
+    .loading-logo {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 20px;
+      border-radius: 16px;
+      background: linear-gradient(135deg, #45A1FF 0%, #2196F3 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 32px;
+      font-weight: bold;
+      color: white;
+      box-shadow: 0 8px 32px rgba(69, 161, 255, 0.3);
+      animation: pulse 2s infinite;
+    }
+    
+    .loading-text {
+      font-size: 18px;
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: #45A1FF;
+    }
+    
+    .loading-subtext {
+      font-size: 14px;
+      color: #888;
+      margin-bottom: 30px;
+    }
+    
+    .loading-spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid #333;
+      border-top: 3px solid #45A1FF;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    
+    @keyframes pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    
+    /* Hide loading when Flutter is ready */
+    .flutter-ready .loading-container {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-out;
+    }
+  </style>
 </head>
 <body>
+  <!-- Loading screen -->
+  <div class="loading-container" id="loading">
+    <div class="loading-logo">J</div>
+    <div class="loading-text">Jinsovik Сканер</div>
+    <div class="loading-subtext">Завантаження...</div>
+    <div class="loading-spinner"></div>
+  </div>
+  
+  <script>
+    // Service Worker registration for PWA
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('/flutter_service_worker.js')
+          .then(function(registration) {
+            console.log('ServiceWorker registration successful');
+          })
+          .catch(function(error) {
+            console.log('ServiceWorker registration failed: ', error);
+          });
+      });
+    }
+    
+    // Hide loading screen when Flutter is ready
+    window.addEventListener('flutter-first-frame', function() {
+      document.body.classList.add('flutter-ready');
+      setTimeout(function() {
+        document.getElementById('loading').style.display = 'none';
+      }, 500);
+    });
+    
+    // iOS viewport fix
+    function setViewportHeight() {
+      let vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    }
+    
+    setViewportHeight();
+    window.addEventListener('resize', setViewportHeight);
+    window.addEventListener('orientationchange', function() {
+      setTimeout(setViewportHeight, 100);
+    });
+  </script>
+  
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>
