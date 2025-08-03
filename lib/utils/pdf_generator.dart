@@ -1,4 +1,4 @@
-﻿import 'dart:io';
+import 'dart:io';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
@@ -45,17 +45,17 @@ class PdfGenerator {
       rethrow;
     }
 
-    final totalStock = products.fold<int>(0, (sum, p) => sum + _toInt(p['stock']));
-    final totalActual = products.fold<int>(0, (sum, p) => sum + _toInt(p['actual']));
+    final totalStock = products.fold<int>(0, (sum, p) => sum + _toInt(p['stock_count']));
+    final totalActual = products.fold<int>(0, (sum, p) => sum + _toInt(p['actual_count']));
     final totalDiff = totalActual - totalStock;
-    final totalStockPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['stock'])));
-    final totalActualPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['actual'])));
+    final totalStockPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['stock_count'])));
+    final totalActualPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['actual_count'])));
     final totalPriceDiff = totalActualPrice - totalStockPrice;
 
     pdf.addPage(
       pw.MultiPage(
         pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(32),
+        margin: const pw.EdgeInsets.all(20),
         build: (pw.Context context) {
           return [
             pw.Container(
@@ -130,9 +130,9 @@ class PdfGenerator {
                 ],
               ),
             ),
-            pw.SizedBox(height: 24),
+            pw.SizedBox(height: 16),
             pw.Container(
-              padding: const pw.EdgeInsets.all(16),
+              padding: const pw.EdgeInsets.all(12),
               decoration: pw.BoxDecoration(
                 color: PdfColors.grey100,
                 borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
@@ -162,7 +162,7 @@ class PdfGenerator {
                 ],
               ),
             ),
-            pw.SizedBox(height: 24),
+            pw.SizedBox(height: 16),
             ..._buildGroupedProductTables(products, otoiwoFont, otoiwoBoldFont),
           ];
         },
@@ -200,83 +200,93 @@ class PdfGenerator {
 
   static List<pw.Widget> _buildGroupedProductTables(List<Map<String, dynamic>> products, pw.Font font, pw.Font boldFont) {
     final groupedProducts = _groupProductsByGender(products);
-    final widgets = <pw.Widget>[];
+    final tableRows = <pw.TableRow>[];
 
+    // Add table header
+    tableRows.add(
+      pw.TableRow(
+        decoration: const pw.BoxDecoration(color: PdfColors.blue900),
+        children: [
+          _buildTableCell('Назва товару', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('Ціна', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('Залишок', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('По факту', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('Різниця', font: boldFont, color: PdfColors.white, isHeader: true),
+        ],
+      ),
+    );
+
+    int overallIndex = 0;
+    
     for (final entry in groupedProducts.entries) {
       if (entry.value.isEmpty) continue;
 
-      widgets.add(
-        pw.Container(
-          margin: const pw.EdgeInsets.only(top: 16, bottom: 8),
-          padding: const pw.EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          decoration: pw.BoxDecoration(
-            color: entry.key == 'Жіночий товар' ? PdfColors.pink600 : PdfColors.blue600,
-            borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-          ),
-          child: pw.Text(
-            '${entry.key} (${entry.value.length} позицій)',
-            style: pw.TextStyle(
-              font: boldFont,
-              fontSize: 14,
-              fontWeight: pw.FontWeight.bold,
-              color: PdfColors.white,
-            ),
-          ),
-        ),
-      );
-
-      widgets.add(
-        pw.Table(
-          border: pw.TableBorder.all(color: PdfColors.grey400),
-          columnWidths: const {
-            0: pw.FlexColumnWidth(3),
-            1: pw.FlexColumnWidth(1),
-            2: pw.FlexColumnWidth(1),
-            3: pw.FlexColumnWidth(1),
-            4: pw.FlexColumnWidth(1),
-          },
+      // Add category separator row
+      tableRows.add(
+        pw.TableRow(
+          decoration: const pw.BoxDecoration(color: PdfColors.grey300),
           children: [
-            pw.TableRow(
-              decoration: const pw.BoxDecoration(color: PdfColors.blue900),
-              children: [
-                _buildTableCell('Назва товару', font: boldFont, color: PdfColors.white, isHeader: true),
-                _buildTableCell('Ціна', font: boldFont, color: PdfColors.white, isHeader: true),
-                _buildTableCell('Залишок', font: boldFont, color: PdfColors.white, isHeader: true),
-                _buildTableCell('По факту', font: boldFont, color: PdfColors.white, isHeader: true),
-                _buildTableCell('Різниця', font: boldFont, color: PdfColors.white, isHeader: true),
-              ],
-            ),
-            ...entry.value.asMap().entries.map((productEntry) {
-              final i = productEntry.key;
-              final p = productEntry.value;
-              final diff = _toInt(p['actual']) - _toInt(p['stock']);
-              final isEven = i % 2 == 0;
-
-              return pw.TableRow(
-                decoration: pw.BoxDecoration(
-                  color: isEven ? PdfColors.grey50 : PdfColors.white,
+            pw.Container(
+              padding: const pw.EdgeInsets.symmetric(vertical: 8, horizontal: 8),
+              child: pw.Text(
+                '${entry.key.toUpperCase()} (${entry.value.length} позицій)',
+                style: pw.TextStyle(
+                  font: boldFont,
+                  fontSize: 11,
+                  fontWeight: pw.FontWeight.bold,
+                  color: PdfColors.black,
                 ),
-                children: [
-                  _buildTableCell(p['name']?.toString() ?? '', font: font),
-                  _buildTableCell('${_toDouble(p['price']).toStringAsFixed(2)} грн', font: font),
-                  _buildTableCell(_toInt(p['stock']).toString(), font: font),
-                  _buildTableCell(_toInt(p['actual']).toString(), font: font),
-                  _buildTableCell(
-                    diff == 0 ? '' : diff.toString(),
-                    font: boldFont,
-                    color: diff > 0 ? PdfColors.green : (diff < 0 ? PdfColors.red : PdfColors.black),
-                  ),
-                ],
-              );
-            }),
+              ),
+            ),
+            pw.Container(), // Empty cells
+            pw.Container(),
+            pw.Container(),
+            pw.Container(),
           ],
         ),
       );
 
-      widgets.add(pw.SizedBox(height: 12));
+      // Add products for this category
+      for (int i = 0; i < entry.value.length; i++) {
+        final p = entry.value[i];
+        final diff = _toInt(p['actual_count']) - _toInt(p['stock_count']);
+        final isEven = overallIndex % 2 == 0;
+
+        tableRows.add(
+          pw.TableRow(
+            decoration: pw.BoxDecoration(
+              color: isEven ? PdfColors.grey50 : PdfColors.white,
+            ),
+            children: [
+              _buildTableCell(p['name']?.toString() ?? '', font: font),
+              _buildTableCell('${_toDouble(p['price']).toStringAsFixed(2)} грн', font: font),
+              _buildTableCell(_toInt(p['stock_count']).toString(), font: font),
+              _buildTableCell(_toInt(p['actual_count']).toString(), font: font),
+              _buildTableCell(
+                diff == 0 ? '' : diff.toString(),
+                font: boldFont,
+                color: diff > 0 ? PdfColors.green : (diff < 0 ? PdfColors.red : PdfColors.black),
+              ),
+            ],
+          ),
+        );
+        overallIndex++;
+      }
     }
 
-    return widgets;
+    return [
+      pw.Table(
+        border: pw.TableBorder.all(color: PdfColors.grey400),
+        columnWidths: const {
+          0: pw.FlexColumnWidth(3),
+          1: pw.FlexColumnWidth(1),
+          2: pw.FlexColumnWidth(1),
+          3: pw.FlexColumnWidth(1),
+          4: pw.FlexColumnWidth(1),
+        },
+        children: tableRows,
+      ),
+    ];
   }
 
   static pw.Widget _buildTableCell(String text, {required pw.Font font, PdfColor? color, bool isHeader = false}) {

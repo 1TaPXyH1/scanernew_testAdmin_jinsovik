@@ -5,6 +5,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'package:vibration/vibration.dart';
+import '../services/network_service.dart';
 import 'recount_session_manager.dart';
 import 'recount_product_list_screen.dart';
 
@@ -23,11 +24,20 @@ class RecountNewScanScreen extends StatefulWidget {
 }
 
 class _RecountNewScanScreenState extends State<RecountNewScanScreen>
-    with SingleTickerProviderStateMixin {
-  final MobileScannerController _controller = MobileScannerController();
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final MobileScannerController _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+  );
   bool _isScanning = false;
   bool _torchOn = false;
   bool _showProductPanel = false;
+  
+  // Error and success states to match scan.dart design
+  bool _showSuccess = false;
+  bool _hasError = false;
+  String _errorMessage = '';
 
   String? _currentBarcode;
   String? _productName;
@@ -42,6 +52,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _borderAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -55,11 +66,45 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   @override
+  void activate() {
+    super.activate();
+    // Restart camera when widget becomes active again
+    _controller.start();
+  }
+
+  @override
+  void deactivate() {
+    // Stop camera when widget becomes inactive (e.g., navigating to another screen)
+    _controller.stop();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
+    // Explicitly stop camera before disposing
+    _controller.stop();
     _controller.dispose();
     _actualCountController.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _controller.start();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _controller.stop();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   void _toggleTorch() {
@@ -88,6 +133,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     } catch (_) {
       _showError('Помилка при обробці штрихкоду');
     } finally {
+      // Add small delay to reduce camera buffer issues
+      await Future.delayed(const Duration(milliseconds: 500));
       if (mounted) {
         setState(() {
           _isScanning = false;
@@ -97,6 +144,21 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   Future<void> _processBarcode(String barcode) async {
+    // Check network connection
+    final networkService = NetworkService();
+    final isConnected = await networkService.isConnected();
+    
+    if (!isConnected) {
+      _showError("Помилка інтернет з'єднання");
+      return;
+    }
+    
+    // Validate barcode format
+    if (!barcode.startsWith('210700')) {
+      _showError("Невірний штрихкод");
+      return;
+    }
+    
     try {
       final response = await http.get(Uri.parse(
         'https://static.88-198-21-139.clients.your-server.de:956/REST/hs/prices/product_new/$barcode/',
@@ -111,19 +173,18 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           final productInfo = data['response'][0];
           final storesList = data['response'][1] as List;
           
-          // Only use data from Харківське шосе store - constant filter
-          final kharkivskeShoseStore = storesList.firstWhere(
-            (store) {
-              final storeName = (store['name']?.toString().toLowerCase()) ?? '';
-              return storeName.contains('харківське шосе');
-            },
-            orElse: () => null,
-          );
+          // Filter for Харківське шосе store only - same logic as result screen
+          final filteredStores = storesList.where((store) {
+            final storeName = (store['name']?.toString().toLowerCase()) ?? '';
+            return storeName.contains('харківське шосе');
+          }).toList();
           
-          if (kharkivskeShoseStore == null) {
+          if (filteredStores.isEmpty) {
             _showError('Товар не знайдено в магазині Харківське шосе');
             return;
           }
+          
+          final storeData = filteredStores.first;
 
           if (!mounted) return;
           final sessionManager =
@@ -133,30 +194,41 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             orElse: () => {},
           );
 
+          // Show success state first
+          setState(() {
+            _showSuccess = true;
+            _hasError = false;
+          });
+          
+          await Future.delayed(const Duration(milliseconds: 800));
+          
+          if (!mounted) return;
+          
+          // Get current actual count and increment by 1
+          final currentActualCount = existingProduct.isNotEmpty
+              ? (existingProduct['actual_count'] ?? 0)
+              : 0;
+          final newActualCount = currentActualCount + 1;
+          
           setState(() {
             _currentBarcode = barcode;
             _productName = productInfo['good'] ?? 'Невідомий товар';
-            _productPrice = (productInfo['price'] ?? 0.0).toDouble();
-            _stockCount = int.tryParse(kharkivskeShoseStore['remaining'].toString()) ?? 0;
-            _actualCount = existingProduct.isNotEmpty
-                ? (existingProduct['actual_count'] ?? 0)
-                : 0;
+            _productPrice = double.tryParse(productInfo['price']?.toString() ?? '0') ?? 0.0;
+            _stockCount = int.tryParse(storeData['remaining'].toString()) ?? 0;
+            _actualCount = newActualCount;
             _actualCountController.text = _actualCount.toString();
+            _showSuccess = false;
             _showProductPanel = true;
           });
 
+          // Add/update product with correct actual count
           sessionManager.addOrUpdateProduct({
             'barcode': barcode,
             'name': _productName!,
             'price': _productPrice!,
             'stock_count': _stockCount!,
-            'actual_count': (_actualCount ?? 0) + 1,
-            'replace': false,
-          });
-
-          setState(() {
-            _actualCount = (_actualCount ?? 0) + 1;
-            _actualCountController.text = _actualCount.toString();
+            'actual_count': 1, // Add 1 to existing count
+            'replace': false, // Don't replace, add to existing
           });
         } else {
           _showError('Товар не знайдено в базі даних');
@@ -169,14 +241,20 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     }
   }
 
-  void _showError(String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(message),
-        backgroundColor: Colors.red,
-        duration: const Duration(seconds: 3),
-      ),
-    );
+  void _showError(String message) async {
+    setState(() {
+      _errorMessage = message;
+      _hasError = true;
+      _showSuccess = false;
+      _isScanning = false;
+    });
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (mounted) {
+      setState(() {
+        _hasError = false;
+        _errorMessage = '';
+      });
+    }
   }
 
   void _updateActualCount() {
@@ -225,6 +303,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
             onPressed: () {
+              _controller.stop();
               final products =
                   Provider.of<RecountSessionManager>(context, listen: false)
                       .products;
@@ -271,29 +350,45 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                   ),
                 ),
                 Positioned(
-                  top: 100,
+                  top: MediaQuery.of(context).padding.top + 60,
                   left: 0,
                   right: 0,
-                  child: Text(
-                    _isScanning ? 'Обробка...' : 'Наведіть камеру на штрихкод',
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w500,
+                  child: Center(
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 10),
+                      decoration: BoxDecoration(
+                        color: const Color.fromARGB(204, 38, 50, 56), // blueGrey.shade900.withOpacity(0.8)
+                        borderRadius: BorderRadius.circular(30),
+                      ),
+                      child: Text(
+                        _isScanning ? 'Обробка...' : 'Наведіть камеру на штрихкод у рамці',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          shadows: [
+                            Shadow(
+                              blurRadius: 3,
+                              color: Colors.black54,
+                              offset: Offset(0, 1),
+                            )
+                          ],
+                        ),
+                      ),
                     ),
                   ),
                 ),
                 Positioned(
-                  bottom: _showProductPanel ? 220 : 100,
-                  right: 30,
+                  bottom: 24,
                   child: FloatingActionButton(
                     onPressed: _toggleTorch,
+                    tooltip:
+                        _torchOn ? 'Вимкнути фонарик' : 'Увімкнути фонарик',
                     backgroundColor:
-                        _torchOn ? Colors.yellow : Colors.grey.shade700,
+                        _torchOn ? Colors.blueAccent : Colors.grey,
                     child: Icon(
                       _torchOn ? Icons.flash_on : Icons.flash_off,
-                      color: _torchOn ? Colors.black : Colors.white,
                     ),
                   ),
                 ),
@@ -306,80 +401,207 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               left: 0,
               right: 0,
               child: Container(
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.only(
-                    topLeft: Radius.circular(20),
-                    topRight: Radius.circular(20),
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                    colors: [
+                      Color(0xFFF8F9FA), // Light grey-white
+                      Color(0xFFFFFFFF), // Pure white
+                    ],
                   ),
+                  borderRadius: const BorderRadius.only(
+                    topLeft: Radius.circular(24),
+                    topRight: Radius.circular(24),
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withAlpha(63),
+                      blurRadius: 20,
+                      offset: const Offset(0, -5),
+                      spreadRadius: 0,
+                    ),
+                  ],
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Container(
-                      padding: const EdgeInsets.all(16),
+                      padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
+                      decoration: const BoxDecoration(
+                        color: Color(0xFF2E7D32), // Dark green
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(24),
+                          topRight: Radius.circular(24),
+                        ),
+                      ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          const Text(
-                            'Товар знайдено',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                            ),
+                          Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(8),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withAlpha(63),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: const Icon(
+                                  Icons.check_circle,
+                                  color: Colors.white,
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              const Text(
+                                'Товар знайдено',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
+                              ),
+                            ],
                           ),
-                          IconButton(
-                            onPressed: _closeProductPanel,
-                            icon: const Icon(Icons.close),
+                          Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white.withAlpha(63),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: IconButton(
+                              onPressed: _closeProductPanel,
+                              icon: const Icon(
+                                Icons.close,
+                                color: Colors.white,
+                              ),
+                            ),
                           ),
                         ],
                       ),
                     ),
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 16),
+                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            _productName ?? '',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w600,
+                          Container(
+                            width: double.infinity,
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF1F8E9), // Light green background
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: const Color(0xFF4CAF50).withAlpha(63),
+                                width: 1,
+                              ),
+                            ),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  _productName ?? '',
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Color(0xFF1B5E20), // Dark green text
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFF4CAF50),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
+                                    style: const TextStyle(
+                                      fontSize: 14,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           const SizedBox(height: 8),
-                          Text(
-                            'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
-                            style: const TextStyle(fontSize: 14),
-                          ),
-                          const SizedBox(height: 16),
                           Row(
                             children: [
                               Expanded(
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Фактична кількість',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF1976D2),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Text(
+                                        'Фактична кількість',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    TextField(
-                                      controller: _actualCountController,
-                                      keyboardType: TextInputType.number,
-                                      onChanged: (_) => _updateActualCount(),
-                                      decoration: InputDecoration(
-                                        border: OutlineInputBorder(
-                                          borderRadius:
-                                              BorderRadius.circular(8),
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withAlpha(13),
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
+                                      ),
+                                      child: TextField(
+                                        controller: _actualCountController,
+                                        keyboardType: TextInputType.number,
+                                        onChanged: (value) => _updateActualCount(),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFF1976D2),
                                         ),
-                                        contentPadding:
-                                            const EdgeInsets.symmetric(
-                                          horizontal: 12,
-                                          vertical: 8,
+                                        decoration: InputDecoration(
+                                          filled: true,
+                                          fillColor: Colors.white,
+                                          border: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: const Color(0xFF1976D2).withAlpha(63),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          enabledBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: BorderSide(
+                                              color: const Color(0xFF1976D2).withAlpha(63),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          focusedBorder: OutlineInputBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                            borderSide: const BorderSide(
+                                              color: Color(0xFF1976D2),
+                                              width: 2,
+                                            ),
+                                          ),
+                                          contentPadding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 16,
+                                          ),
                                         ),
                                       ),
                                     ),
@@ -391,29 +613,58 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'Залишок по базі',
-                                      style: TextStyle(
-                                        fontSize: 12,
-                                        color: Colors.grey,
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFFFF9800),
+                                        borderRadius: BorderRadius.circular(16),
+                                      ),
+                                      child: const Text(
+                                        'Залишок по базі',
+                                        style: TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.white,
+                                        ),
                                       ),
                                     ),
                                     const SizedBox(height: 4),
                                     Container(
                                       padding: const EdgeInsets.symmetric(
-                                        horizontal: 12,
-                                        vertical: 12,
+                                        horizontal: 16,
+                                        vertical: 16,
                                       ),
                                       decoration: BoxDecoration(
-                                        border:
-                                            Border.all(color: Colors.grey.shade300),
-                                        borderRadius: BorderRadius.circular(8),
-                                        color: Colors.grey.shade100,
+                                        gradient: const LinearGradient(
+                                          colors: [
+                                            Color(0xFFFFF3E0),
+                                            Color(0xFFFFE0B2),
+                                          ],
+                                        ),
+                                        border: Border.all(
+                                          color: const Color(0xFFFF9800).withAlpha(63),
+                                          width: 2,
+                                        ),
+                                        borderRadius: BorderRadius.circular(12),
+                                        boxShadow: [
+                                          BoxShadow(
+                                            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
+                                            blurRadius: 8,
+                                            offset: const Offset(0, 2),
+                                          ),
+                                        ],
                                       ),
                                       width: double.infinity,
                                       child: Text(
                                         _stockCount?.toString() ?? '0',
-                                        style: const TextStyle(fontSize: 16),
+                                        style: const TextStyle(
+                                          fontSize: 16,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xFFE65100),
+                                        ),
                                       ),
                                     ),
                                   ],
@@ -424,8 +675,73 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                         ],
                       ),
                     ),
-                    const SizedBox(height: 20),
+                    const SizedBox(height: 8),
                   ],
+                ),
+              ),
+            ),
+          // Success overlay - matching scan.dart design
+          if (_showSuccess)
+            Positioned.fill(
+              child: AnimatedOpacity(
+                duration: const Duration(milliseconds: 300),
+                opacity: _showSuccess ? 1.0 : 0.0,
+                child: Container(
+                  color: Colors.black54,
+                  child: const Center(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.check_circle,
+                          color: Colors.greenAccent,
+                          size: 80,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          'УСПІШНО СКАНОВАНО',
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 18,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          // Error overlay - matching scan.dart design
+          if (_hasError)
+            Positioned(
+              bottom: 80,
+              left: 24,
+              right: 24,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    vertical: 12, horizontal: 20),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(229, 255, 82, 82), // redAccent.withOpacity(0.9)
+                  borderRadius: BorderRadius.circular(25),
+                  boxShadow: const [
+                    BoxShadow(
+                      color: Color.fromARGB(128, 255, 82, 82), // redAccent.withOpacity(0.5)
+                      blurRadius: 12,
+                      offset: Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Text(
+                  _errorMessage.isEmpty
+                      ? 'Помилка сканування'
+                      : _errorMessage,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.w600,
+                    fontSize: 16,
+                  ),
                 ),
               ),
             ),

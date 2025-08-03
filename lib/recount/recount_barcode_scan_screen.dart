@@ -13,8 +13,12 @@ class RecountBarcodeScanScreen extends StatefulWidget {
   State<RecountBarcodeScanScreen> createState() => _RecountBarcodeScanScreenState();
 }
 
-class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> with SingleTickerProviderStateMixin {
-  final MobileScannerController _controller = MobileScannerController();
+class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
+  final MobileScannerController _controller = MobileScannerController(
+    detectionSpeed: DetectionSpeed.noDuplicates,
+    facing: CameraFacing.back,
+    torchEnabled: false,
+  );
   bool _isScanning = false;
   bool _showSuccess = false;
   bool _hasError = false;
@@ -27,6 +31,7 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _borderAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
@@ -40,10 +45,37 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
   }
 
   @override
+  void deactivate() {
+    // Stop camera when widget becomes inactive (e.g., navigating to another screen)
+    _controller.stop();
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
+    // Explicitly stop camera before disposing
+    _controller.stop();
     _controller.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    super.didChangeAppLifecycleState(state);
+    switch (state) {
+      case AppLifecycleState.resumed:
+        _controller.start();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        _controller.stop();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
   }
 
   void _toggleTorch() {

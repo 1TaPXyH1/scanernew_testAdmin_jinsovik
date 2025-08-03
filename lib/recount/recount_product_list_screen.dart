@@ -1,4 +1,4 @@
-﻿import 'package:flutter/material.dart';
+import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:printing/printing.dart';
 
@@ -48,18 +48,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     };
   }
 
-  int _totalCount(List<Map<String, dynamic>> products) => products.fold(0, (sum, p) => sum + _toInt(p['actual']));
-  int _totalStock(List<Map<String, dynamic>> products) => products.fold(0, (sum, p) => sum + _toInt(p['stock']));
-  int _totalDiff(List<Map<String, dynamic>> products) => products.fold(0, (sum, p) => sum + (_toInt(p['actual']) - _toInt(p['stock'])));
-  double _totalStockPrice(List<Map<String, dynamic>> products) => products.fold(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['stock'])));
-  double _totalActualPrice(List<Map<String, dynamic>> products) => products.fold(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['actual'])));
-  double _totalPriceDiff(List<Map<String, dynamic>> products) => _totalActualPrice(products) - _totalStockPrice(products);
 
-  Color _diffColor(int diff) {
-    if (diff > 0) return Colors.greenAccent;
-    if (diff < 0) return Colors.redAccent;
-    return Colors.grey;
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -86,44 +75,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: Column(
-          children: [
-            Container(
-              margin: const EdgeInsets.all(12),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.blueGrey.shade700, Colors.blueGrey.shade800],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                ),
-                borderRadius: BorderRadius.circular(16),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x4D000000), // 30% opacity black
-                    blurRadius: 8,
-                    offset: Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: const Row(
-                children: [
-                  SizedBox(width: 20), // Space for color bar
-                  Expanded(flex: 3, child: Text('📦 Назва товару', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16))),
-                  Expanded(flex: 1, child: Text('💰 Ціна', style: TextStyle(color: Colors.orange, fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center)),
-                  Expanded(flex: 1, child: Text('🏪 Залишок', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center)),
-                  Expanded(flex: 1, child: Text('📱 По факту', style: TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center)),
-                  Expanded(flex: 1, child: Text('⚖️ Різниця', style: TextStyle(color: Colors.white70, fontWeight: FontWeight.bold, fontSize: 14), textAlign: TextAlign.center)),
-                  SizedBox(width: 80), // Space for action buttons
-                ],
-              ),
-            ),
-            Expanded(
-              child: _buildGroupedProductList(products),
-            ),
-            _buildSummary(products),
-          ],
-        ),
+        child: _buildGroupedProductList(products),
       ),
     );
   }
@@ -132,302 +84,528 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     final groupedProducts = _groupProductsByGender(products);
     
     return ListView(
-      padding: const EdgeInsets.symmetric(horizontal: 8),
+      padding: const EdgeInsets.all(16),
       children: [
-        for (final entry in groupedProducts.entries)
-          if (entry.value.isNotEmpty) ...[
-            // Заголовок групи
+        // Простий список карток замість таблиці
+        ...groupedProducts.entries.expand((entry) {
+          if (entry.value.isEmpty) return <Widget>[];
+          
+          final widgets = <Widget>[];
+          
+          // Заголовок групи
+          widgets.add(
             Container(
-              margin: const EdgeInsets.fromLTRB(8, 16, 8, 8),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   colors: entry.key == 'Жіночий товар' 
-                      ? [Colors.pink.shade600, Colors.pink.shade800]
-                      : [Colors.blue.shade600, Colors.blue.shade800],
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
+                      ? [Colors.pink.shade600, Colors.pink.shade700]
+                      : [Colors.blue.shade600, Colors.blue.shade700],
+                  begin: Alignment.centerLeft,
+                  end: Alignment.centerRight,
                 ),
                 borderRadius: BorderRadius.circular(12),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x4D000000),
-                    blurRadius: 6,
-                    offset: Offset(0, 2),
-                  ),
-                ],
               ),
               child: Row(
                 children: [
                   Icon(
                     entry.key == 'Жіночий товар' ? Icons.female : Icons.male,
                     color: Colors.white,
-                    size: 24,
+                    size: 20,
                   ),
-                  const SizedBox(width: 12),
+                  const SizedBox(width: 8),
                   Text(
                     '${entry.key} (${entry.value.length})',
                     style: const TextStyle(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                 ],
               ),
             ),
-            // Товари групи
-            ...entry.value.asMap().entries.map((productEntry) {
-              final i = productEntry.key;
-              final p = productEntry.value;
-              final isEven = i % 2 == 0;
-              final diff = _toInt(p['actual']) - _toInt(p['stock']);
-              final diffColor = diff == 0 ? Colors.transparent : (diff > 0 ? Colors.greenAccent : Colors.redAccent);
-              
-              return Card(
-                elevation: 6,
-                margin: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.all(Radius.circular(20))),
-                color: isEven ? const Color(0xFF212121) : const Color(0xFF424242),
-                shadowColor: const Color(0x66000000),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(18),
-                  splashColor: const Color(0x1F448AFF),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 18),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        Container(
-                          width: 8,
-                          height: 54,
-                          margin: const EdgeInsets.only(right: 12),
-                          decoration: BoxDecoration(
-                            color: diffColor,
-                            borderRadius: BorderRadius.circular(6),
+          );
+          
+          // Картки товарів
+          for (final product in entry.value) {
+            final diff = _toInt(product['actual_count']) - _toInt(product['stock_count']);
+            
+            widgets.add(
+              Card(
+                margin: const EdgeInsets.only(bottom: 8),
+                color: const Color(0xFF1E1E1E),
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Назва товару
+                      Text(
+                        product['name']?.toString() ?? '',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if ((product['comment'] ?? '').toString().isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            product['comment'],
+                            style: TextStyle(
+                              color: Colors.orange.shade300,
+                              fontSize: 12,
+                            ),
                           ),
                         ),
-                        Expanded(
-                          flex: 3,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                p['name']?.toString() ?? '',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
-                                ),
-                                maxLines: 2,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                              if ((p['comment'] ?? '').toString().isNotEmpty)
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Row(
-                                    children: [
-                                      const Icon(Icons.comment, color: Colors.orange, size: 16),
-                                      const SizedBox(width: 4),
-                                      Expanded(
-                                        child: Text(
-                                          p['comment'],
-                                          style: const TextStyle(color: Colors.orange, fontSize: 13),
-                                          maxLines: 1,
-                                          overflow: TextOverflow.ellipsis,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                            ],
+                      const SizedBox(height: 12),
+                      // Інформація про товар
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildInfoChip(
+                              'Ціна', 
+                              '${_toDouble(product['price']).toStringAsFixed(0)}₴',
+                              Colors.orange,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            children: [
-                              const Icon(Icons.sell, color: Colors.orange, size: 20),
-                              const SizedBox(height: 2),
-                              Text(
-                                _toDouble(p['price']).toStringAsFixed(2),
-                                style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.w600, fontSize: 15),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildInfoChip(
+                              'Залишок', 
+                              _toInt(product['stock_count']).toString(),
+                              Colors.green,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            children: [
-                              const Icon(Icons.store, color: Colors.green, size: 20),
-                              const SizedBox(height: 2),
-                              Text(
-                                _toInt(p['stock']).toString(),
-                                style: const TextStyle(color: Colors.green, fontWeight: FontWeight.w600, fontSize: 15),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildInfoChip(
+                              'По факту', 
+                              _toInt(product['actual_count']).toString(),
+                              Colors.blue,
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: Column(
-                            children: [
-                              const Icon(Icons.qr_code, color: Colors.blueAccent, size: 20),
-                              const SizedBox(height: 2),
-                              Text(
-                                _toInt(p['actual']).toString(),
-                                style: const TextStyle(color: Colors.blueAccent, fontWeight: FontWeight.w700, fontSize: 16),
-                                textAlign: TextAlign.center,
-                              ),
-                            ],
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: _buildInfoChip(
+                              'Різниця', 
+                              diff == 0 ? '=' : diff.toString(),
+                              diff == 0 ? Colors.grey : (diff > 0 ? Colors.green : Colors.red),
+                            ),
                           ),
-                        ),
-                        Expanded(
-                          flex: 1,
-                          child: diff == 0
-                              ? const SizedBox.shrink()
-                              : Text(
-                                  '$diff',
-                                  style: TextStyle(
-                                    color: diff > 0 ? Colors.greenAccent : Colors.redAccent,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                  textAlign: TextAlign.center,
-                                ),
-                        ),
-                        const SizedBox(width: 80), // Space for action buttons
-                      ],
-                    ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      // Кнопки дій
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          TextButton.icon(
+                            onPressed: () => _editProduct(product),
+                            icon: const Icon(Icons.edit, color: Colors.blue, size: 16),
+                            label: const Text('Редагувати', style: TextStyle(color: Colors.blue)),
+                          ),
+                          TextButton.icon(
+                            onPressed: () => _deleteProduct(product),
+                            icon: const Icon(Icons.delete, color: Colors.red, size: 16),
+                            label: const Text('Видалити', style: TextStyle(color: Colors.red)),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ),
-              );
-            }),
-          ],
+              ),
+            );
+          }
+          
+          widgets.add(const SizedBox(height: 16));
+          return widgets;
+        }),
+      const SizedBox(height: 16),
+        // Підсумок переобліку
+        Container(
+          margin: const EdgeInsets.symmetric(horizontal: 12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade700, width: 1),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                '📊 ПІДСУМОК ПЕРЕОБЛІКУ',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  SingleChildScrollView(
+                    child: _buildSummaryStats(products),
+                  ),
+                  const SizedBox(height: 16),
+                ],
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: 12),
+        // Кнопки дій
+        Container(
+          margin: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: const Color(0xFF1E1E1E),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.grey.shade700, width: 1),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.qr_code_scanner, size: 20),
+                      label: const Text('Сканувати далі'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.blueAccent,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () => Navigator.of(context).pop('scan_more'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton.icon(
+                      icon: const Icon(Icons.picture_as_pdf, size: 20),
+                      label: const Text('Завершити'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.green.shade600,
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      ),
+                      onPressed: () async {
+                        final file = await PdfGenerator.generateRecountReport(
+                          products: products,
+                          sessionNames: widget.sessionNames,
+                        );
+                        if (!mounted) return;
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (ctx) => AlertDialog(
+                            backgroundColor: const Color(0xFF1E1E1E),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                            title: const Text('PDF звіт створено', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                            content: const Text('Звіт успішно згенеровано. Ви можете поділитися ним через PDF.', style: TextStyle(color: Colors.white70)),
+                            actions: [
+                              TextButton(
+                                onPressed: () {
+                                  Navigator.pop(ctx);
+                                  Provider.of<RecountSessionManager>(context, listen: false).clear();
+                                  Navigator.of(context).pop('finish');
+                                },
+                                child: const Text('Готово', style: TextStyle(color: Colors.white60)),
+                              ),
+                              ElevatedButton(
+                                onPressed: () {
+                                  Printing.sharePdf(bytes: file.readAsBytesSync(), filename: 'recount_report.pdf');
+                                },
+                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+                                child: const Text('Відкрити'),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
 
-  Widget _buildSummary(List<Map<String, dynamic>> products) {
-    final totalCount = _totalCount(products);
-    final totalStock = _totalStock(products);
-    final totalDiff = _totalDiff(products);
-    final totalStockPrice = _totalStockPrice(products);
-    final totalActualPrice = _totalActualPrice(products);
-    final totalPriceDiff = _totalPriceDiff(products);
+  Widget _buildInfoChip(String label, String value, Color color) {
     return Container(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
-        color: Colors.blueGrey.shade800,
-        border: const Border(top: BorderSide(color: Color(0x1AFFFFFF))),
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(77), width: 1),
       ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          const Text(
-            'Підсумок переобліку',
-            style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontSize: 10,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
-          const SizedBox(height: 16),
-          _summaryRow('Всього товарів:', '$totalCount'),
-          _summaryRow('Загальний залишок:', '$totalStock', color: Colors.green),
-          _summaryRow('Проскановано:', '$totalCount', color: Colors.blueAccent),
-          _summaryRow('Різниця:', totalDiff > 0 ? '+$totalDiff' : '$totalDiff', color: _diffColor(totalDiff)),
-          const Divider(color: Colors.white30, height: 24),
-          _summaryRow('Ціна (по залишкам):', '${totalStockPrice.toStringAsFixed(2)} грн', color: Colors.green),
-          _summaryRow('Ціна (по факту):', '${totalActualPrice.toStringAsFixed(2)} грн', color: Colors.blueAccent),
-          _summaryRow('Різниця в грошах:', '${totalPriceDiff >= 0 ? '+' : ''}${totalPriceDiff.toStringAsFixed(2)} грн', color: totalPriceDiff >= 0 ? Colors.green : Colors.red),
-          const SizedBox(height: 20),
-          Row(
-            children: [
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.qr_code_scanner),
-                  label: const Text('Сканувати далі'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blueAccent,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () => Navigator.of(context).pop('scan_more'),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Expanded(
-                child: ElevatedButton.icon(
-                  icon: const Icon(Icons.picture_as_pdf),
-                  label: const Text('Завершити'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.green.shade600,
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 14),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  onPressed: () async {
-                    final file = await PdfGenerator.generateRecountReport(
-                      products: products,
-                      sessionNames: widget.sessionNames,
-                    );
-                    if (!mounted) return;
-                    showDialog(
-                      context: context,
-                      barrierDismissible: false,
-                      builder: (ctx) => AlertDialog(
-                        backgroundColor: const Color(0xFF1E1E1E),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                        title: const Text('PDF звіт створено', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                        content: const Text('Звіт успішно згенеровано. Ви можете поділитися ним через PDF.', style: TextStyle(color: Colors.white70)),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(ctx);
-                              Provider.of<RecountSessionManager>(context, listen: false).clear();
-                              Navigator.of(context).pop('finish');
-                            },
-                            child: const Text('Готово', style: TextStyle(color: Colors.white60)),
-                          ),
-                          ElevatedButton(
-                            onPressed: () {
-                              Printing.sharePdf(bytes: file.readAsBytesSync(), filename: 'recount_report.pdf');
-                            },
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                            child: const Text('Відкрити'),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _summaryRow(String title, String value, {Color? color}) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+  Widget _buildTableHeader(String text, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
       child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        mainAxisSize: MainAxisSize.min,
         children: [
-          Text(title, style: const TextStyle(color: Colors.white70, fontSize: 14)),
-          Text(
-            value,
-            style: TextStyle(
-              color: color ?? Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.bold,
+          Icon(icon, color: Colors.white70, size: 16),
+          const SizedBox(width: 4),
+          Expanded(
+            child: Text(
+              text,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 12,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
           ),
         ],
       ),
     );
   }
+
+  Widget _buildTableCell({required Widget child}) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
+      child: child,
+    );
+  }
+
+  void _editProduct(Map<String, dynamic> product) {
+    final TextEditingController actualCountController = TextEditingController(
+      text: product['actual_count']?.toString() ?? '0',
+    );
+    final TextEditingController commentController = TextEditingController(
+      text: product['comment']?.toString() ?? '',
+    );
+
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF424242),
+        title: const Text('Редагувати товар', style: TextStyle(color: Colors.white)),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              product['name']?.toString() ?? '',
+              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            ),
+            const SizedBox(height: 16),
+            TextField(
+              controller: actualCountController,
+              keyboardType: TextInputType.number,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Кількість по факту',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white70),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
+            TextField(
+              controller: commentController,
+              style: const TextStyle(color: Colors.white),
+              decoration: const InputDecoration(
+                labelText: 'Коментар',
+                labelStyle: TextStyle(color: Colors.white70),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.white70),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: Colors.blue),
+                ),
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Скасувати', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              final newActualCount = int.tryParse(actualCountController.text) ?? 0;
+              final newComment = commentController.text.trim();
+              
+              // Оновлюємо товар у сесії
+              final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+              sessionManager.updateProduct(
+                product['barcode'],
+                newActualCount,
+                newComment,
+              );
+              
+              Navigator.pop(context);
+              setState(() {}); // Оновлюємо UI
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Товар "${product['name']}" оновлено'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            },
+            child: const Text('Зберегти', style: TextStyle(color: Colors.blue)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _deleteProduct(Map<String, dynamic> product) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF424242),
+        title: const Text('Видалити товар?', style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Ви впевнені, що хочете видалити "${product['name']}"?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Скасувати', style: TextStyle(color: Colors.grey)),
+          ),
+          TextButton(
+            onPressed: () {
+              // Видаляємо товар з сесії
+              final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+              sessionManager.removeProduct(product['barcode']);
+              
+              Navigator.pop(context);
+              setState(() {}); // Оновлюємо UI
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('Товар "${product['name']}" видалено'),
+                  backgroundColor: Colors.red,
+                ),
+              );
+            },
+            child: const Text('Видалити', style: TextStyle(color: Colors.red)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSummaryStats(List<Map<String, dynamic>> products) {
+    final totalProducts = products.length;
+    final totalStock = products.fold<int>(0, (sum, p) => sum + _toInt(p['stock_count']));
+    final totalActual = products.fold<int>(0, (sum, p) => sum + _toInt(p['actual_count']));
+    final totalDiff = totalActual - totalStock;
+    final totalStockPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['stock_count'])));
+    final totalActualPrice = products.fold<double>(0.0, (sum, p) => sum + (_toDouble(p['price']) * _toInt(p['actual_count'])));
+    final totalPriceDiff = totalActualPrice - totalStockPrice;
+
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard('📦', 'Товарів', '$totalProducts', Colors.blue),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard('🏪', 'Залишок', '$totalStock', Colors.green),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard('📱', 'По факту', '$totalActual', Colors.orange),
+            ),
+          ],
+        ),
+        const SizedBox(height: 8),
+        Row(
+          children: [
+            Expanded(
+              child: _buildStatCard('⚖️', 'Різниця', totalDiff >= 0 ? '+$totalDiff' : '$totalDiff', 
+                totalDiff > 0 ? Colors.green : (totalDiff < 0 ? Colors.red : Colors.grey)),
+            ),
+            const SizedBox(width: 8),
+            Expanded(
+              child: _buildStatCard('💰', 'Вартість', '${totalPriceDiff >= 0 ? '+' : ''}${totalPriceDiff.toStringAsFixed(0)}₴', 
+                totalPriceDiff >= 0 ? Colors.green : Colors.red),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStatCard(String icon, String label, String value, Color color) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25), // ~0.1 opacity
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: color.withAlpha(77), width: 1), // ~0.3 opacity
+      ),
+      child: Column(
+        children: [
+          Text(
+            icon,
+            style: const TextStyle(fontSize: 20),
+            textAlign: TextAlign.center,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: TextStyle(
+              color: color,
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+            ),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
+    );
+  }
+
+
 }
