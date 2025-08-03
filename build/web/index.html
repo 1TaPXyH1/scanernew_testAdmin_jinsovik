@@ -1,6 +1,8 @@
 <!DOCTYPE html>
 <html lang="uk">
 <head>
+  <!-- Content Security Policy for security -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; connect-src 'self'; manifest-src 'self';">
   <!--
     If you are serving your web app in a path other than the root, change the
     href value below to reflect the base path you are serving from.
@@ -56,6 +58,18 @@
 
   <title>Jinsovik Сканер</title>
   <link rel="manifest" href="manifest.json">
+  <!-- Android Splash Screens (manifest.json should include them) -->
+  <!--
+    Пример для manifest.json:
+    "splash_pages": [
+      {
+        "src": "icons/splash-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png"
+      }
+    ]
+    Для полной поддержки используйте https://web.dev/add-manifest/ и https://maskable.app/editor для генерации maskable icons.
+  -->
   
   <!-- Preload critical resources -->
   <link rel="preload" href="flutter_bootstrap.js" as="script">
@@ -83,6 +97,7 @@
       justify-content: center;
       align-items: center;
       z-index: 9999;
+      transition: opacity 0.5s ease-out;
     }
     
     .loading-logo {
@@ -133,11 +148,37 @@
       50% { transform: scale(1.05); }
     }
     
+    /* Fade-out animation for loading */
+    .fade-out {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.5s ease-out;
+    }
+    
     /* Hide loading when Flutter is ready */
     .flutter-ready .loading-container {
       opacity: 0;
       pointer-events: none;
       transition: opacity 0.5s ease-out;
+    }
+    
+    /* Adaptive styles for small screens */
+    @media (max-width: 500px) {
+      .loading-logo {
+        width: 48px;
+        height: 48px;
+        font-size: 22px;
+      }
+      .loading-text {
+        font-size: 14px;
+      }
+      .loading-subtext {
+        font-size: 11px;
+      }
+      .loading-spinner {
+        width: 24px;
+        height: 24px;
+      }
     }
   </style>
 </head>
@@ -150,7 +191,7 @@
     <div class="loading-spinner"></div>
   </div>
   
-  <script>
+  <script defer>
     // Service Worker registration for PWA
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', function() {
@@ -168,9 +209,13 @@
     window.addEventListener('flutter-first-frame', function() {
       document.body.classList.add('flutter-ready');
       setTimeout(function() {
-        document.getElementById('loading').style.display = 'none';
+        document.getElementById('loading').classList.add('fade-out');
+        setTimeout(function() {
+          document.getElementById('loading').style.display = 'none';
+        }, 500);
       }, 500);
     });
+</script>
     
     // iOS viewport fix
     function setViewportHeight() {
