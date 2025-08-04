@@ -1,13 +1,18 @@
 {
-    "name": "barcode_scanner_app",
-    "short_name": "barcode_scanner_app",
+    "name": "Jinsovik Сканер",
+    "short_name": "Jinsovik",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#121212",
-    "theme_color": "#121212",
-    "description": "A new Flutter project.",
+    "theme_color": "#45A1FF",
+    "description": "Сканер штрихкодів для ХШ - PWA версія",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
+    "categories": ["business", "productivity"],
+    "lang": "uk",
+    "dir": "ltr",
+    "scope": "/",
+    "permissions": ["camera"],
     "icons": [
         {
             "src": "icons/Icon-192.png",
