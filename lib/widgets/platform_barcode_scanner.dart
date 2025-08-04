@@ -5,6 +5,90 @@ import '../services/web_barcode_scanner.dart'
     if (dart.library.html) '../services/web_barcode_scanner.dart'
     if (dart.library.io) '../services/web_barcode_scanner_stub.dart';
 
+// ===== QR Overlay Painter =====
+class QrScannerOverlayPainter extends CustomPainter {
+  final Color borderColor;
+  final double borderRadius;
+  final double borderLength;
+  final double borderWidth;
+  final double cutOutSize;
+
+  QrScannerOverlayPainter({
+    required this.borderColor,
+    this.borderRadius = 0,
+    this.borderLength = 30,
+    this.borderWidth = 10,
+    this.cutOutSize = 300,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = borderColor
+      ..strokeWidth = borderWidth
+      ..style = PaintingStyle.stroke;
+
+    final double left = (size.width - cutOutSize) / 2;
+    final double top = (size.height - cutOutSize) / 2;
+    final double right = left + cutOutSize;
+    final double bottom = top + cutOutSize;
+    final r = borderRadius;
+    final l = borderLength;
+
+    // Top left
+    canvas.drawLine(
+      Offset(left, top + r),
+      Offset(left, top + l),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(left, top),
+      Offset(left + l, top),
+      paint,
+    );
+
+    // Top right
+    canvas.drawLine(
+      Offset(right, top + r),
+      Offset(right, top + l),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(right - l, top),
+      Offset(right, top),
+      paint,
+    );
+
+    // Bottom left
+    canvas.drawLine(
+      Offset(left, bottom - r),
+      Offset(left, bottom - l),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(left, bottom),
+      Offset(left + l, bottom),
+      paint,
+    );
+
+    // Bottom right
+    canvas.drawLine(
+      Offset(right, bottom - r),
+      Offset(right, bottom - l),
+      paint,
+    );
+    canvas.drawLine(
+      Offset(right - l, bottom),
+      Offset(right, bottom),
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(CustomPainter oldDelegate) => false;
+}
+// ===== END QR Overlay Painter =====
+
 class PlatformBarcodeScanner extends StatefulWidget {
   final Function(String) onBarcodeDetected;
   final bool torchEnabled;
@@ -179,57 +263,17 @@ class _PlatformBarcodeScannerState extends State<PlatformBarcodeScanner> {
     if (_videoElement == null) {
       return const Center(child: Text('Камера недоступна'));
     }
-    
-    // For web, we'll use a simple container since HtmlElementView has issues
-    // The actual video scanning is handled by the WebBarcodeScanner service
-    return Container(
-      color: Colors.black,
-      child: const Center(
-        child: Text(
-          'Камера активна\nНаведіть на штрих-код',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
-  
-  Widget _buildMobileScanner() {
-    return MobileScanner(
-      controller: _mobileController,
-      onDetect: (capture) {
-        final List<Barcode> barcodes = capture.barcodes;
-        if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
-          _handleBarcodeDetected(barcodes.first.rawValue!);
-        }
-      },
-    );
-  }
-  
-  Widget _buildScanningOverlay() {
-    return Container(
-      decoration: ShapeDecoration(
-        shape: const QrScannerOverlayShape(
-          borderColor: Colors.blue,
-          borderRadius: 10,
-          borderLength: 30,
-          borderWidth: 10,
-          cutOutSize: 300,
-        ),
-      ),
-      child: const Align(
-        alignment: Alignment.bottomCenter,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: 200),
+    // Для web — також повноекранно
+    return SizedBox.expand(
+      child: Container(
+        color: Colors.black,
+        child: const Center(
           child: Text(
-            'Наведіть камеру на штрих-код',
+            'Камера активна\nНаведіть на штрих-код',
+            textAlign: TextAlign.center,
             style: TextStyle(
               color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.bold,
             ),
           ),
         ),
@@ -237,6 +281,39 @@ class _PlatformBarcodeScannerState extends State<PlatformBarcodeScanner> {
     );
   }
   
+  Widget _buildMobileScanner() {
+    return SizedBox.expand(
+      child: MobileScanner(
+        controller: _mobileController,
+        onDetect: (capture) {
+          final List<Barcode> barcodes = capture.barcodes;
+          if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {
+            _handleBarcodeDetected(barcodes.first.rawValue!);
+          }
+        },
+      ),
+    );
+  }
+  
+  Widget _buildScanningOverlay() {
+  // Тільки рамка, без затемнення
+  return IgnorePointer(
+    ignoring: true,
+    child: CustomPaint(
+      size: Size.infinite,
+      painter: QrScannerOverlayPainter(
+        borderColor: Colors.blue,
+        borderRadius: 10,
+        borderLength: 30,
+        borderWidth: 10,
+        cutOutSize: 300,
+      ),
+    ),
+  );
+}
+
+
+
   void _showManualInputDialog() {
     final controller = TextEditingController();
     

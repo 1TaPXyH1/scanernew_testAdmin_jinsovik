@@ -290,67 +290,58 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       ),
       body: Stack(
         children: [
-          PlatformBarcodeScanner(
-            onBarcodeDetected: _onBarcodeDetected,
-            torchEnabled: _torchOn,
-            onTorchToggle: _onTorchToggle,
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(128, 0, 0, 0),
+          Positioned.fill(
+            child: PlatformBarcodeScanner(
+              onBarcodeDetected: _onBarcodeDetected,
+              torchEnabled: _torchOn,
+              onTorchToggle: _onTorchToggle,
             ),
-            child: Stack(
-              children: [
-                Center(
-                  child: AnimatedBuilder(
-                    animation: _borderAnimation,
-                    builder: (context, child) {
-                      return Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _isScanning ? Colors.green : Colors.white,
-                            width: _borderAnimation.value,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      );
-                    },
-                  ),
-                ),
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 60,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(204, 38, 50, 56), // blueGrey.shade900.withOpacity(0.8)
-                        borderRadius: BorderRadius.circular(30),
-                      ),
-                      child: Text(
-                        _isScanning ? 'Обробка...' : 'Наведіть камеру на штрихкод у рамці',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 3,
-                              color: Colors.black54,
-                              offset: Offset(0, 1),
-                            )
-                          ],
-                        ),
-                      ),
+          ),
+          Center(
+            child: AnimatedBuilder(
+              animation: _borderAnimation,
+              builder: (context, child) {
+                return Container(
+                  width: 250,
+                  height: 250,
+                  decoration: BoxDecoration(
+                    border: Border.all(
+                      color: _isScanning ? Colors.green : Colors.white,
+                      width: _borderAnimation.value,
                     ),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                );
+              },
+            ),
+          ),
+          Positioned(
+            top: MediaQuery.of(context).padding.top + 60,
+            left: 0,
+            right: 0,
+            child: Center(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                decoration: BoxDecoration(
+                  color: const Color.fromARGB(204, 38, 50, 56),
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Text(
+                  _isScanning ? 'Обробка...' : 'Наведіть камеру на штрихкод у рамці',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.w600,
+                    shadows: [
+                      Shadow(
+                        blurRadius: 3,
+                        color: Colors.black54,
+                        offset: Offset(0, 1),
+                      )
+                    ],
                   ),
                 ),
-
-              ],
+              ),
             ),
           ),
           if (_showProductPanel)
