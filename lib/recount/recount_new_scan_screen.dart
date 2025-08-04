@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:provider/provider.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 
 import 'package:vibration/vibration.dart';
 import '../services/network_service.dart';
+import '../widgets/platform_barcode_scanner.dart';
 import 'recount_session_manager.dart';
 import 'recount_product_list_screen.dart';
 
@@ -25,11 +25,6 @@ class RecountNewScanScreen extends StatefulWidget {
 
 class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  final MobileScannerController _controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
   bool _isScanning = false;
   bool _torchOn = false;
   bool _showProductPanel = false;
@@ -66,16 +61,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   @override
-  void activate() {
-    super.activate();
-    // Restart camera when widget becomes active again
-    _controller.start();
-  }
-
-  @override
   void deactivate() {
-    // Stop camera when widget becomes inactive (e.g., navigating to another screen)
-    _controller.stop();
+    // Platform scanner handles lifecycle automatically
     super.deactivate();
   }
 
@@ -83,42 +70,25 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
-    // Explicitly stop camera before disposing
-    _controller.stop();
-    _controller.dispose();
     _actualCountController.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    switch (state) {
-      case AppLifecycleState.resumed:
-        _controller.start();
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.detached:
-        _controller.stop();
-        break;
-      case AppLifecycleState.hidden:
-        break;
-    }
+    // Platform scanner handles lifecycle automatically
   }
 
-  void _toggleTorch() {
-    _controller.toggleTorch();
+  void _onTorchToggle(bool enabled) {
     setState(() {
-      _torchOn = !_torchOn;
+      _torchOn = enabled;
     });
   }
 
-  Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
+  Future<void> _onBarcodeDetected(String barcode) async {
     if (_isScanning) return;
 
-    final barcode = capture.barcodes.first.rawValue;
-    if (barcode == null || barcode.isEmpty) return;
+    if (barcode.isEmpty) return;
 
     setState(() {
       _isScanning = true;
@@ -303,7 +273,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
             onPressed: () {
-              _controller.stop();
               final products =
                   Provider.of<RecountSessionManager>(context, listen: false)
                       .products;
@@ -321,9 +290,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       ),
       body: Stack(
         children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onBarcodeDetected,
+          PlatformBarcodeScanner(
+            onBarcodeDetected: _onBarcodeDetected,
+            torchEnabled: _torchOn,
+            onTorchToggle: _onTorchToggle,
           ),
           Container(
             decoration: const BoxDecoration(
@@ -379,19 +349,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                     ),
                   ),
                 ),
-                Positioned(
-                  bottom: 24,
-                  child: FloatingActionButton(
-                    onPressed: _toggleTorch,
-                    tooltip:
-                        _torchOn ? 'Вимкнути фонарик' : 'Увімкнути фонарик',
-                    backgroundColor:
-                        _torchOn ? Colors.blueAccent : Colors.grey,
-                    child: Icon(
-                      _torchOn ? Icons.flash_on : Icons.flash_off,
-                    ),
-                  ),
-                ),
+
               ],
             ),
           ),

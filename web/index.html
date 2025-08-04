@@ -17,7 +17,7 @@
   <base href="$FLUTTER_BASE_HREF">
 
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="Сканер штрихкодів для ХШ">
   <meta name="keywords" content="сканер, штрих-код, QR-код, Jinsovik, мобільний">
@@ -33,6 +33,15 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Jinsovik Сканер">
   <meta name="format-detection" content="telephone=no">
+  
+  <!-- Camera permissions and PWA optimizations -->
+  <meta name="permissions" content="camera">
+  <meta name="camera" content="user">
+  <meta name="supported-color-schemes" content="dark">
+  <meta name="color-scheme" content="dark">
+  
+  <!-- Prevent zoom on iOS -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   
   <!-- iOS icons -->
   <link rel="apple-touch-icon" sizes="57x57" href="icons/Icon-72.png">

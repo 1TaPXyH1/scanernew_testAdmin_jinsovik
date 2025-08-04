@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/network_service.dart';
 import '../screens/home.dart';
 import '../screens/result.dart';
+import '../widgets/platform_barcode_scanner.dart';
 
 class ScanScreen extends StatefulWidget {
   final String selectedStore;
@@ -14,11 +14,6 @@ class ScanScreen extends StatefulWidget {
 
 class _ScanScreenState extends State<ScanScreen>
     with SingleTickerProviderStateMixin {
-  final MobileScannerController controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
   bool isScanning = false;
   bool torchOn = false;
 
@@ -49,18 +44,16 @@ class _ScanScreenState extends State<ScanScreen>
   @override
   void dispose() {
     _borderAnimationController.dispose();
-    controller.dispose();
     super.dispose();
   }
 
-  void toggleTorch() {
-    controller.toggleTorch();
+  void _onTorchToggle(bool enabled) {
     setState(() {
-      torchOn = !torchOn;
+      torchOn = enabled;
     });
   }
 
-  Future<void> _handleBarcode(Barcode barcode) async {
+  Future<void> _handleBarcode(String code) async {
     if (isScanning) return;
 
     setState(() {
@@ -68,8 +61,6 @@ class _ScanScreenState extends State<ScanScreen>
       _hasError = false;
       _showSuccess = false;
     });
-
-    final code = barcode.rawValue ?? '';
     final networkService = NetworkService();
     final isConnected = await networkService.isConnected();
 
@@ -150,12 +141,10 @@ class _ScanScreenState extends State<ScanScreen>
           body: Stack(
             alignment: Alignment.center,
             children: [
-              MobileScanner(
-                controller: controller,
-                onDetect: (capture) async {
-                  if (capture.barcodes.isEmpty) return;
-                  await _handleBarcode(capture.barcodes.first);
-                },
+              PlatformBarcodeScanner(
+                onBarcodeDetected: _handleBarcode,
+                torchEnabled: torchOn,
+                onTorchToggle: _onTorchToggle,
               ),
               Positioned.fill(
                 child: IgnorePointer(
@@ -294,19 +283,7 @@ class _ScanScreenState extends State<ScanScreen>
                     ),
                   ),
                 ),
-              Positioned(
-                bottom: 24,
-                child: FloatingActionButton(
-                  onPressed: toggleTorch,
-                  tooltip:
-                      torchOn ? 'Вимкнути фонарик' : 'Увімкнути фонарик',
-                  backgroundColor:
-                      torchOn ? Colors.blueAccent : Colors.grey,
-                  child: Icon(
-                    torchOn ? Icons.flash_on : Icons.flash_off,
-                  ),
-                ),
-              ),
+
             ],
           ),
         ),

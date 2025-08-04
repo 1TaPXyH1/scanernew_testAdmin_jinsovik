@@ -375,37 +375,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     );
   }
 
-  Widget _buildTableHeader(String text, IconData icon) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 12),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(icon, color: Colors.white70, size: 16),
-          const SizedBox(width: 4),
-          Expanded(
-            child: Text(
-              text,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-              textAlign: TextAlign.center,
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 
-  Widget _buildTableCell({required Widget child}) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 8),
-      child: child,
-    );
-  }
 
   void _editProduct(Map<String, dynamic> product) {
     final TextEditingController actualCountController = TextEditingController(

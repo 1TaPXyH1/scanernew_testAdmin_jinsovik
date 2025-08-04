@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import '../services/network_service.dart';
+import '../widgets/platform_barcode_scanner.dart';
 import 'package:vibration/vibration.dart';
 
 class RecountBarcodeScanScreen extends StatefulWidget {
@@ -14,11 +14,6 @@ class RecountBarcodeScanScreen extends StatefulWidget {
 }
 
 class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> with SingleTickerProviderStateMixin, WidgetsBindingObserver {
-  final MobileScannerController _controller = MobileScannerController(
-    detectionSpeed: DetectionSpeed.noDuplicates,
-    facing: CameraFacing.back,
-    torchEnabled: false,
-  );
   bool _isScanning = false;
   bool _showSuccess = false;
   bool _hasError = false;
@@ -46,8 +41,7 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
 
   @override
   void deactivate() {
-    // Stop camera when widget becomes inactive (e.g., navigating to another screen)
-    _controller.stop();
+    // Platform scanner handles lifecycle automatically
     super.deactivate();
   }
 
@@ -55,41 +49,23 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
-    // Explicitly stop camera before disposing
-    _controller.stop();
-    _controller.dispose();
     super.dispose();
   }
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    super.didChangeAppLifecycleState(state);
-    switch (state) {
-      case AppLifecycleState.resumed:
-        _controller.start();
-        break;
-      case AppLifecycleState.inactive:
-      case AppLifecycleState.paused:
-      case AppLifecycleState.detached:
-        _controller.stop();
-        break;
-      case AppLifecycleState.hidden:
-        break;
-    }
+    // Platform scanner handles lifecycle automatically
   }
 
-  void _toggleTorch() {
-    _controller.toggleTorch();
+  void _onTorchToggle(bool enabled) {
     setState(() {
-      _torchOn = !_torchOn;
+      _torchOn = enabled;
     });
   }
 
-  void _onDetect(BarcodeCapture capture) async {
+  void _onDetect(String barcode) async {
     if (_isScanning) return;
-    if (capture.barcodes.isEmpty) return;
-    final barcode = capture.barcodes.first.rawValue;
-    if (barcode == null || barcode.isEmpty) return;
+    if (barcode.isEmpty) return;
 
     setState(() {
       _isScanning = true;
@@ -260,11 +236,6 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
           centerTitle: true,
           actions: [
             IconButton(
-              icon: Icon(_torchOn ? Icons.flash_on : Icons.flash_off, color: Colors.yellowAccent),
-              tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
-              onPressed: _toggleTorch,
-            ),
-            IconButton(
               icon: const Icon(Icons.close),
               tooltip: 'Закрити',
               onPressed: () => Navigator.of(context).pop(),
@@ -273,9 +244,10 @@ class _RecountBarcodeScanScreenState extends State<RecountBarcodeScanScreen> wit
         ),
         body: Stack(
           children: [
-            MobileScanner(
-              controller: _controller,
-              onDetect: _onDetect,
+            PlatformBarcodeScanner(
+              onBarcodeDetected: _onDetect,
+              torchEnabled: _torchOn,
+              onTorchToggle: _onTorchToggle,
             ),
             Positioned.fill(
               child: IgnorePointer(
