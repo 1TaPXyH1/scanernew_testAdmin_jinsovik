@@ -5,6 +5,7 @@ import '../services/web_barcode_scanner.dart'
     if (dart.library.html) '../services/web_barcode_scanner.dart'
     if (dart.library.io) '../services/web_barcode_scanner_stub.dart';
 
+
 // ===== QR Overlay Painter =====
 class QrScannerOverlayPainter extends CustomPainter {
   final Color borderColor;
@@ -261,30 +262,143 @@ class _PlatformBarcodeScannerState extends State<PlatformBarcodeScanner> {
   
   Widget _buildWebScanner() {
     if (_videoElement == null) {
-      return const Center(child: Text('Камера недоступна'));
-    }
-    // Для web — також повноекранно
-    return SizedBox.expand(
-      child: Container(
-        color: Colors.black,
-        child: const Center(
-          child: Text(
-            'Камера активна\nНаведіть на штрих-код',
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: Colors.white,
-              fontSize: 16,
+      return const SizedBox.expand(
+        child: ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.videocam_off, color: Colors.white, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'Камера недоступна',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+              ],
             ),
           ),
         ),
-      ),
-    );
+      );
+    }
+    
+    // Для web спробуємо показати реальне відео
+    try {
+      return SizedBox.expand(
+        child: Stack(
+          children: [
+            // Показуємо відео елемент
+            if (kIsWeb && _videoElement != null)
+              Positioned.fill(
+                child: HtmlElementView(
+                  viewType: 'barcode-scanner-video',
+                ),
+              ),
+            // Fallback для випадків, коли відео не показується
+            Container(
+              color: Colors.black.withValues(alpha: 0.3),
+              child: const Center(
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.camera_alt, color: Colors.white70, size: 48),
+                    SizedBox(height: 16),
+                    Text(
+                      'Камера активна\nНаведіть на штрих-код',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    } catch (e) {
+      // Fallback на випадок помилки
+      return SizedBox.expand(
+        child: Container(
+          color: Colors.black,
+          child: const Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.camera_alt, color: Colors.white, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'Камера активна\nНаведіть на штрих-код',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
   }
   
   Widget _buildMobileScanner() {
+    if (_mobileController == null) {
+      return const SizedBox.expand(
+        child: ColoredBox(
+          color: Colors.black,
+          child: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.videocam_off, color: Colors.white, size: 48),
+                SizedBox(height: 16),
+                Text(
+                  'Контролер камери не ініціалізовано',
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                  textAlign: TextAlign.center,
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return SizedBox.expand(
       child: MobileScanner(
-        controller: _mobileController,
+        controller: _mobileController!,
+        errorBuilder: (context, error) {
+          return ColoredBox(
+            color: Colors.black,
+            child: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, color: Colors.red, size: 48),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Помилка камери:\n${error.errorDetails?.message ?? error.toString()}',
+                    style: const TextStyle(color: Colors.white, fontSize: 14),
+                    textAlign: TextAlign.center,
+                  ),
+                  const SizedBox(height: 16),
+                  ElevatedButton(
+                    onPressed: () {
+                      // Перезапуск камери
+                      _mobileController?.dispose();
+                      _initializeMobileScanner();
+                    },
+                    child: const Text('Повторити'),
+                  ),
+                ],
+              ),
+            ),
+          );
+        },
         onDetect: (capture) {
           final List<Barcode> barcodes = capture.barcodes;
           if (barcodes.isNotEmpty && barcodes.first.rawValue != null) {

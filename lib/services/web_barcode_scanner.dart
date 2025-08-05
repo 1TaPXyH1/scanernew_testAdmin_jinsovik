@@ -5,6 +5,8 @@ import 'package:flutter/foundation.dart';
 import 'dart:html' as html if (dart.library.html) 'dart:html';
 import 'dart:js' as js if (dart.library.js) 'dart:js';
 import 'dart:js_util' as js_util if (dart.library.js_util) 'dart:js_util';
+// Для реєстрації platformView
+import 'dart:ui_web' if (dart.library.io) 'dart:ui' show platformViewRegistry;
 
 class WebBarcodeScanner {
   static const String _jsLibraryUrl = 'https://unpkg.com/@zxing/library@latest/umd/index.min.js';
@@ -79,10 +81,27 @@ class WebBarcodeScanner {
         ..muted = true
         ..style.width = '100%'
         ..style.height = '100%'
-        ..style.objectFit = 'cover';
+        ..style.objectFit = 'cover'
+        ..style.border = 'none'
+        ..style.background = 'black';
       
       // Set playsInline attribute for iOS compatibility
       _videoElement!.setAttribute('playsinline', 'true');
+      
+      // Register platform view for Flutter web
+      if (kIsWeb) {
+        try {
+          platformViewRegistry.registerViewFactory(
+            'barcode-scanner-video',
+            (int viewId) => _videoElement!,
+          );
+        } catch (e) {
+          // Platform view might already be registered, ignore error
+          if (kDebugMode) {
+            print('Platform view registration warning: $e');
+          }
+        }
+      }
       
       // Create canvas for image processing
       _canvasElement = html.CanvasElement()
