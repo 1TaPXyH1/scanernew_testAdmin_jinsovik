@@ -211,10 +211,10 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                           Container(
                             padding: const EdgeInsets.all(20),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFFFFF).withValues(alpha: 13), // 0.05 * 255 ≈ 13
+                              color: const Color(0xFFFFFFFF).withValues(alpha: 0.05), // 0.05 * 255 ≈ 13
                               borderRadius: BorderRadius.circular(16),
                               border: Border.all(
-                                color: const Color(0xFFFFFFFF).withValues(alpha: 26), // 0.1 * 255 ≈ 26
+                                color: const Color(0xFFFFFFFF).withValues(alpha: 0.1), // 0.1 * 255 ≈ 26
                               ),
                             ),
                             child: Text(
@@ -235,7 +235,7 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                           Container(
                             padding: const EdgeInsets.all(16),
                             decoration: BoxDecoration(
-                              color: const Color(0xFFFFA500).withValues(alpha: 26), // orange 0.1 opacity
+                              color: const Color(0xFFFFA500).withValues(alpha: 0.1), // orange 0.1 opacity
                               borderRadius: BorderRadius.circular(12),
                             ),
                             child: Row(
@@ -271,10 +271,10 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                                   child: Container(
                                     padding: const EdgeInsets.all(20),
                                     decoration: BoxDecoration(
-                                      color: const Color(0xFF2196F3).withValues(alpha: 38), // blueAccent 0.15 opacity
+                                      color: const Color(0xFF2196F3).withValues(alpha: 0.15), // blueAccent 0.15 opacity
                                       borderRadius: BorderRadius.circular(16),
                                       border: Border.all(
-                                        color: const Color(0xFF2196F3).withValues(alpha: 77), // blueAccent 0.3 opacity
+                                        color: const Color(0xFF2196F3).withValues(alpha: 0.3), // blueAccent 0.3 opacity
                                       ),
                                     ),
                                     child: Column(
@@ -308,7 +308,7 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                                                   vertical: 8,
                                                 ),
                                                 decoration: BoxDecoration(
-                                                  color: const Color(0xFF2196F3).withValues(alpha: 51), // blueAccent 0.2 opacity
+                                                  color: const Color(0xFF2196F3).withValues(alpha: 0.2), // blueAccent 0.2 opacity
                                                   borderRadius: BorderRadius.circular(8),
                                                 ),
                                                 child: Text(
@@ -353,10 +353,10 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                                 child: Container(
                                   padding: const EdgeInsets.all(20),
                                   decoration: BoxDecoration(
-                                    color: const Color(0xFF4CAF50).withValues(alpha: 38), // green 0.15 opacity
+                                    color: const Color(0xFF4CAF50).withValues(alpha: 0.15), // green 0.15 opacity
                                     borderRadius: BorderRadius.circular(16),
                                     border: Border.all(
-                                      color: const Color(0xFF4CAF50).withValues(alpha: 77), // green 0.3 opacity
+                                      color: const Color(0xFF4CAF50).withValues(alpha: 0.3), // green 0.3 opacity
                                     ),
                                   ),
                                   child: Column(
@@ -376,7 +376,7 @@ class _RecountProductScreenState extends State<RecountProductScreen> {
                                           vertical: 12,
                                         ),
                                         decoration: BoxDecoration(
-                                          color: const Color(0xFF4CAF50).withValues(alpha: 51), // green 0.2 opacity
+                                          color: const Color(0xFF4CAF50).withValues(alpha: 0.2), // green 0.2 opacity
                                           borderRadius: BorderRadius.circular(8),
                                         ),
                                         child: Text(
