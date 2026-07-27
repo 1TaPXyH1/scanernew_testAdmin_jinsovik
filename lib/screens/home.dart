@@ -72,229 +72,161 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return PopScope(
-      canPop: false,
-      child: Semantics(
-        label: 'Головний екран сканера',
-        button: true,
-        child: Scaffold(
-          body: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [Colors.black, Colors.blueGrey.shade900],
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-              ),
+      canPop: true,
+      child: Scaffold(
+        body: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [Colors.black, Colors.blueGrey.shade900],
+              begin: Alignment.topCenter,
+              end: Alignment.bottomCenter,
             ),
-            child: SafeArea(
-              child: Column(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(
-                        colors: [Colors.deepOrange, Colors.black87],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black54,
-                          offset: Offset(0, 3),
-                          blurRadius: 5,
+          ),
+          child: SafeArea(
+            child: Column(
+              children: [
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.qr_code_scanner, color: Colors.white70, size: 22),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Jinsovik Сканер',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
+                      ),
+                      const Spacer(),
+                      IconButton(
+                        icon: const Icon(Icons.settings_outlined, color: Colors.white54, size: 22),
+                        onPressed: () {},
+                      ),
+                    ],
+                  ),
+                ),
+                const Spacer(flex: 2),
+                GestureDetector(
+                  onTap: _showStorePicker,
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.storefront, color: Colors.orangeAccent.shade200, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        selectedStore,
+                        style: TextStyle(
+                          color: Colors.orangeAccent.shade200,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        'Змінити',
+                        style: TextStyle(
+                          color: Colors.orangeAccent.shade200.withAlpha(128),
+                          fontSize: 14,
+                        ),
+                      ),
+                      Icon(Icons.chevron_right, color: Colors.orangeAccent.shade200.withAlpha(128), size: 18),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: 200,
+                  height: 200,
+                  child: ElevatedButton(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        PageRouteBuilder(
+                          pageBuilder: (context, animation, secondaryAnimation) =>
+                              ScanScreen(selectedStore: selectedStore),
+                          transitionsBuilder:
+                              (context, animation, secondaryAnimation, child) {
+                            return SlideTransition(
+                              position: Tween<Offset>(
+                                begin: const Offset(0.0, 1.0),
+                                end: Offset.zero,
+                              ).animate(animation),
+                              child: FadeTransition(
+                                opacity: animation,
+                                child: child,
+                              ),
+                            );
+                          },
+                          transitionDuration: const Duration(milliseconds: 300),
+                        ),
+                      );
+                    },
+                    style: ElevatedButton.styleFrom(
+                      shape: const CircleBorder(),
+                      backgroundColor: Colors.orangeAccent,
+                      shadowColor: Colors.orangeAccent.withAlpha(128),
+                      elevation: 12,
                     ),
-                    child: Row(
+                    child: const Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        const Icon(Icons.qr_code_scanner, color: Colors.white),
-                        const SizedBox(width: 8),
-                        const Text(
-                          'Jinsovik Сканер',
+                        Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white),
+                        SizedBox(height: 8),
+                        Text(
+                          'СКАНУВАТИ',
                           style: TextStyle(
-                            color: Colors.white,
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        const Spacer(),
-                        Container(
-                          margin: const EdgeInsets.only(right: 2),
-                          child: Material(
-                            color: Colors.transparent,
-                            child: InkWell(
-                              borderRadius: BorderRadius.circular(20),
-                              onTap: () {
-                                Navigator.of(context).push(
-                                  MaterialPageRoute(
-                                    builder: (context) => const RecountMainScreen(),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                decoration: BoxDecoration(
-                                  color: Colors.blueGrey.shade800.withAlpha((0.8 * 255).round()),
-                                  borderRadius: BorderRadius.circular(20),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.black.withAlpha((0.18 * 255).round()),
-                                      blurRadius: 6,
-                                      offset: const Offset(0, 2),
-                                    ),
-                                  ],
-                                ),
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.bar_chart_rounded, color: Colors.white70, size: 20),
-                                    SizedBox(width: 4),
-                                    Text(
-                                      'Переоблік',
-                                      style: TextStyle(
-                                        color: Colors.white70,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 14,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ),
+                            color: Colors.white,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  Expanded(
-                    child: Center(
-                      child: SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 24),
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: _showStorePicker,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 20),
-                                decoration: BoxDecoration(
-                                  color: Colors.orangeAccent.withAlpha((0.15 * 255).round()),
-                                  borderRadius: BorderRadius.circular(30),
-                                  border: Border.all(
-                                    color: Colors.orangeAccent.withAlpha((0.4 * 255).round()),
-                                    width: 1.5,
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.orangeAccent.withAlpha((0.3 * 255).round()),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    const Icon(Icons.storefront, color: Colors.orangeAccent),
-                                    const SizedBox(width: 12),
-                                    Text(
-                                      selectedStore,
-                                      style: const TextStyle(
-                                        color: Colors.orangeAccent,
-                                        fontSize: 18,
-                                        fontWeight: FontWeight.w600,
-                                      ),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Icon(Icons.arrow_drop_down, color: Colors.orangeAccent),
-                                  ],
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 48),
-                            ElevatedButton.icon(
-                              onPressed: () {
-                                Navigator.of(context).push(
-                                  PageRouteBuilder(
-                                    pageBuilder: (context, animation, secondaryAnimation) =>
-                                        ScanScreen(selectedStore: selectedStore),
-                                    transitionsBuilder:
-                                        (context, animation, secondaryAnimation, child) {
-                                      return SlideTransition(
-                                        position: Tween<Offset>(
-                                          begin: const Offset(0.0, 1.0),
-                                          end: Offset.zero,
-                                        ).animate(animation),
-                                        child: FadeTransition(
-                                          opacity: animation,
-                                          child: child,
-                                        ),
-                                      );
-                                    },
-                                    transitionDuration: const Duration(milliseconds: 300),
-                                  ),
-                                );
-                              },
-                              icon: Container(
-                                decoration: BoxDecoration(
-                                  shape: BoxShape.circle,
-                                  color: Colors.white24,
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.orangeAccent.withAlpha((0.6 * 255).round()),
-                                      blurRadius: 8,
-                                      offset: const Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                padding: const EdgeInsets.all(8),
-                                child: const Icon(Icons.camera_alt_outlined,
-                                    size: 28, color: Colors.white),
-                              ),
-                              label: const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 14),
-                                child: Text(
-                                  'СКАНУВАТИ',
-                                  style: TextStyle(
-                                    fontSize: 22,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
-                                ),
-                              ),
-                              style: ElevatedButton.styleFrom(
-                                minimumSize: const Size(double.infinity, 60),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(30),
-                                ),
-                                elevation: 10,
-                                backgroundColor: Colors.orangeAccent,
-                                shadowColor: Colors.orangeAccent.withAlpha((0.5 * 255).round()),
-                              ),
-                            ),
-                            const SizedBox(height: 8),
-                            const Text(
-                              'Натисніть, щоб почати сканування',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 14,
-                              ),
-                            ),
-                            const SizedBox(height: 48),
-                            Text(
-                              _appVersion,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.grey,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(height: 20),
-                          ],
+                ),
+                const SizedBox(height: 48),
+                SizedBox(
+                  width: 220,
+                  child: OutlinedButton.icon(
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const RecountMainScreen(),
                         ),
+                      );
+                    },
+                    icon: const Icon(Icons.bar_chart_rounded, size: 20, color: Colors.white70),
+                    label: const Text(
+                      'Переоблік товарів',
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w500,
                       ),
                     ),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white24),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(24),
+                      ),
+                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
+                    ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 24),
+                const SizedBox(height: 48),
+                Text(
+                  _appVersion,
+                  style: const TextStyle(
+                    fontSize: 13,
+                    color: Colors.grey,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                const Spacer(flex: 1),
+              ],
             ),
           ),
         ),
