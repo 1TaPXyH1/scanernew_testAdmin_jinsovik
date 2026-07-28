@@ -74,14 +74,14 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   @override
   void deactivate() {
-    _saveSession();
-    _controller.stop();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _controller.stop());
     super.deactivate();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
+    _saveSession();
     _borderAnimationController.dispose();
     _controller.stop();
     _controller.dispose();
