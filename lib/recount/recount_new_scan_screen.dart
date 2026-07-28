@@ -181,7 +181,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     try {
       final response = await http.get(Uri.parse(
         ApiConfig.productUrl(barcode),
-      ));
+      )).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -453,7 +453,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 child: AnimatedBuilder(
                   animation: _borderAnimation,
                   builder: (context, child) {
-                    final color = _hasError ? Colors.redAccent : Colors.orangeAccent;
+                    final color = _hasError ? const Color(0xFFCF6679) : Colors.orangeAccent;
                     final w = _hasError ? 3.0 : _borderAnimation.value;
                     return CustomPaint(
                       size: Size(boxSize, boxSize),

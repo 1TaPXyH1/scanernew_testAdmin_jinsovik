@@ -20,7 +20,11 @@ class RecountSessionManager extends ChangeNotifier {
 
   Future<void> saveSessionSnapshot() async {
     if (_currentSessionId != null) {
-      await _storage.saveProducts(_currentSessionId!, _products);
+      try {
+        await _storage.saveProducts(_currentSessionId!, _products);
+      } catch (e) {
+        debugPrint('Помилка збереження сесії: $e');
+      }
     }
   }
 
@@ -60,8 +64,12 @@ class RecountSessionManager extends ChangeNotifier {
 
   Future<void> completeSession() async {
     if (_currentSessionId != null) {
-      await _storage.saveProducts(_currentSessionId!, _products);
-      await _storage.completeSession(_currentSessionId!);
+      try {
+        await _storage.saveProducts(_currentSessionId!, _products);
+        await _storage.completeSession(_currentSessionId!);
+      } catch (e) {
+        debugPrint('Помилка завершення сесії: $e');
+      }
     }
     _products.clear();
     _currentSessionId = null;
