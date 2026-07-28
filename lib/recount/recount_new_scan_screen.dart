@@ -137,8 +137,18 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
     if (!_isScanning || _showProductPanel) return;
 
-    final barcode = capture.barcodes.first.rawValue;
-    if (barcode == null || barcode.isEmpty) return;
+    final barcode = capture.barcodes.first;
+    if (barcode.rawValue == null || barcode.rawValue!.isEmpty) return;
+
+    if (barcode.corners.isNotEmpty && capture.size != Size.zero) {
+      final cx = barcode.corners.map((o) => o.dx).reduce((a, b) => a + b) / barcode.corners.length;
+      final cy = barcode.corners.map((o) => o.dy).reduce((a, b) => a + b) / barcode.corners.length;
+      final zoneW = capture.size.width * 0.4;
+      final zoneH = capture.size.height * 0.4;
+      final imgCx = capture.size.width / 2;
+      final imgCy = capture.size.height / 2;
+      if ((cx - imgCx).abs() > zoneW || (cy - imgCy).abs() > zoneH) return;
+    }
 
     setState(() => _isScanning = false);
 
@@ -146,7 +156,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       if (await Vibration.hasVibrator()) {
         try { Vibration.vibrate(duration: 100); } catch (_) {}
       }
-      await _processBarcode(barcode);
+      await _processBarcode(barcode.rawValue!);
       if (!mounted) return;
     } catch (_) {
       _showError('Помилка при обробці штрихкоду');
