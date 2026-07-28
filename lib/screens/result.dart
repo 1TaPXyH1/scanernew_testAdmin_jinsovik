@@ -5,6 +5,7 @@ import 'package:vibration/vibration.dart';
 import '../widgets/shimmer_loading.dart';
 import '../screens/scan.dart';
 import '../screens/home.dart';
+import '../services/api_config.dart';
 
 class ResultsScreen extends StatefulWidget {
   final String barcode;
@@ -26,31 +27,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Map<String, dynamic>? productData;
   bool isLoading = true;
 
-  static const List<String> allowedPhones = [
-    '+38 (073) 145 22 33',
-    '+38 (073) 184 22 33',
-    '+38 (063) 196 22 33',
-    '+38 (073) 546 22 33',
-    '+38 (073) 875 22 33',
-    '+38 (093) 546 22 33',
-    '+38 (063) 789 22 33',
-    '+38 (093) 705 22 33',
-    '+38 (073) 540 22 33',
-    '+38 (093) 145 22 33',
-    '+38 (073) 789 22 33',
-    '+38 (093) 668 22 33',
-    '+38 (073) 549 22 33',
-    '+38 (073) 456 22 33',
-    '+38 (093) 184 22 33',
-    '+38 (093) 547 22 33',
-    '+38 (063) 184 22 33',
-    '+38 (063) 546 22 33',
-    '+38 (073) 148 22 33',
-    '+38 (073) 780 22 33',
-    '+38 (063) 857 22 33',
-    '+38 (073) 957 22 33',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -58,7 +34,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   String extractShortName(String fullName) {
-    final regex = RegExp(r'Mагазин\s+\"(.+?)\"');
+    final regex = RegExp(r'Магазин\s+\"(.+?)\"');
     final match = regex.firstMatch(fullName);
     return match != null ? match.group(1)! : fullName;
   }
@@ -66,7 +42,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   Future<void> fetchProductData() async {
     try {
       final response = await http.get(Uri.parse(
-        'https://static.88-198-21-139.clients.your-server.de:956/REST/hs/prices/product_new/${widget.barcode}/',
+        ApiConfig.productUrl(widget.barcode),
       ));
 
       if (response.statusCode == 200) {
@@ -81,9 +57,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
           if (widget.selectedStore == 'Вся мережа') {
             final filteredStores = storesList.where((store) {
-              final phone = store['telephone']?.toString();
               final remaining = int.tryParse(store['remaining'].toString()) ?? 0;
-              return allowedPhones.contains(phone) && remaining > 0;
+              return remaining > 0;
             }).toList();
 
             if (filteredStores.isEmpty) {
@@ -105,7 +80,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
             final hasVibrator = await Vibration.hasVibrator();
             if (mounted && hasVibrator) {
-              Vibration.vibrate(pattern: [0, 150, 100, 150]);
+              try { Vibration.vibrate(pattern: [0, 150, 100, 150]); } catch (_) {}
             }
 
             setState(() {
@@ -147,7 +122,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             if (mounted && results.length == 1) {
               final hasVibrator = await Vibration.hasVibrator();
               if (hasVibrator) {
-                Vibration.vibrate(pattern: [0, 150, 100, 150]);
+                try { Vibration.vibrate(pattern: [0, 150, 100, 150]); } catch (_) {}
               }
             }
 
@@ -185,7 +160,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
           isLoading = false;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      debugPrint('fetchProductData error: $e');
       setState(() {
         productData = null;
         isLoading = false;

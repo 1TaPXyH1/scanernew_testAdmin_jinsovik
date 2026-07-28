@@ -6,6 +6,7 @@ import 'package:http/http.dart' as http;
 
 import 'package:vibration/vibration.dart';
 import '../services/network_service.dart';
+import '../services/api_config.dart';
 import 'recount_session_manager.dart';
 import 'recount_product_list_screen.dart';
 
@@ -68,13 +69,12 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void activate() {
     super.activate();
-    // Restart camera when widget becomes active again
     _controller.start();
   }
 
   @override
   void deactivate() {
-    // Stop camera when widget becomes inactive (e.g., navigating to another screen)
+    _saveSession();
     _controller.stop();
     super.deactivate();
   }
@@ -83,7 +83,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
-    // Explicitly stop camera before disposing
     _controller.stop();
     _controller.dispose();
     _actualCountController.dispose();
@@ -100,10 +99,18 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       case AppLifecycleState.inactive:
       case AppLifecycleState.paused:
       case AppLifecycleState.detached:
+        _saveSession();
         _controller.stop();
         break;
       case AppLifecycleState.hidden:
         break;
+    }
+  }
+
+  Future<void> _saveSession() async {
+    final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+    if (sessionManager.currentSessionId != null) {
+      await sessionManager.saveSessionSnapshot();
     }
   }
 
@@ -161,7 +168,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     
     try {
       final response = await http.get(Uri.parse(
-        'https://static.88-198-21-139.clients.your-server.de:956/REST/hs/prices/product_new/$barcode/',
+        ApiConfig.productUrl(barcode),
       ));
 
       if (response.statusCode == 200) {
@@ -307,14 +314,16 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               final products =
                   Provider.of<RecountSessionManager>(context, listen: false)
                       .products;
-              Navigator.of(context).push(
-                MaterialPageRoute(
-                  builder: (context) => RecountProductListScreen(
-                    products: products,
-                    sessionNames: widget.sessionNames,
-                  ),
-                ),
-              );
+              Navigator.of(context)
+                  .push(
+                    MaterialPageRoute(
+                      builder: (context) => RecountProductListScreen(
+                        products: products,
+                        sessionNames: widget.sessionNames,
+                      ),
+                    ),
+                  )
+                  .then((_) => _controller.start());
             },
           ),
         ],
@@ -681,37 +690,38 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               ),
             ),
           // Success overlay - matching scan.dart design
-          if (_showSuccess)
-            Positioned.fill(
-              child: AnimatedOpacity(
-                duration: const Duration(milliseconds: 300),
-                opacity: _showSuccess ? 1.0 : 0.0,
-                child: Container(
-                  color: Colors.black54,
-                  child: const Center(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          Icons.check_circle,
-                          color: Colors.greenAccent,
-                          size: 80,
+          AnimatedOpacity(
+            duration: const Duration(milliseconds: 300),
+            opacity: _showSuccess ? 1.0 : 0.0,
+            child: _showSuccess
+                ? Positioned.fill(
+                    child: Container(
+                      color: Colors.black54,
+                      child: const Center(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.check_circle,
+                              color: Colors.greenAccent,
+                              size: 80,
+                            ),
+                            SizedBox(height: 16),
+                            Text(
+                              'УСПІШНО СКАНОВАНО',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18,
+                              ),
+                            ),
+                          ],
                         ),
-                        SizedBox(height: 16),
-                        Text(
-                          'УСПІШНО СКАНОВАНО',
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontWeight: FontWeight.bold,
-                            fontSize: 18,
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                  ),
-                ),
-              ),
-            ),
+                  )
+                : const SizedBox.shrink(),
+          ),
           // Error overlay - matching scan.dart design
           if (_hasError)
             Positioned(

@@ -1,12 +1,20 @@
 ﻿import 'package:flutter/material.dart';
 import 'screens/home.dart';
 import 'package:provider/provider.dart';
+import 'services/session_storage.dart';
 import 'recount/recount_session_manager.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final storage = SessionStorage();
+  await storage.load();
+
   runApp(
-    ChangeNotifierProvider(
-      create: (_) => RecountSessionManager(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => storage),
+        ChangeNotifierProvider(create: (_) => RecountSessionManager(storage)),
+      ],
       child: const BarcodeScannerApp(),
     ),
   );

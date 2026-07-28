@@ -40,9 +40,11 @@ class PdfGenerator {
     try {
       final fontData = await rootBundle.load('assets/fonts/calibri.ttf');
       otoiwoFont = pw.Font.ttf(fontData.buffer.asByteData());
-      otoiwoBoldFont = otoiwoFont;
+      final boldFontData = await rootBundle.load('assets/fonts/calibrib.ttf');
+      otoiwoBoldFont = pw.Font.ttf(boldFontData.buffer.asByteData());
     } catch (e) {
-      rethrow;
+      otoiwoFont = pw.Font.helvetica();
+      otoiwoBoldFont = pw.Font.helveticaBold();
     }
 
     final totalStock = products.fold<int>(0, (sum, p) => sum + _toInt(p['stock_count']));

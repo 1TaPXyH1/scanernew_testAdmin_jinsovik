@@ -311,10 +311,12 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                             title: const Text('PDF звіт створено', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
                             content: const Text('Звіт успішно згенеровано. Ви можете поділитися ним через PDF.', style: TextStyle(color: Colors.white70)),
                             actions: [
-                              TextButton(
-                                onPressed: () {
+                                  TextButton(
+                                onPressed: () async {
                                   Navigator.pop(ctx);
-                                  Provider.of<RecountSessionManager>(context, listen: false).clear();
+                                  final manager = Provider.of<RecountSessionManager>(context, listen: false);
+                                  await manager.completeSession();
+                                  if (!mounted) return;
                                   Navigator.of(context).pop('finish');
                                 },
                                 child: const Text('Готово', style: TextStyle(color: Colors.white60)),
@@ -515,15 +517,15 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard('📦', 'Товарів', '$totalProducts', Colors.blue),
+              child: _buildStatCard(Icons.inventory_2_outlined, 'Товарів', '$totalProducts', Colors.blue),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildStatCard('🏪', 'Залишок', '$totalStock', Colors.green),
+              child: _buildStatCard(Icons.store_outlined, 'Залишок', '$totalStock', Colors.green),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildStatCard('📱', 'По факту', '$totalActual', Colors.orange),
+              child: _buildStatCard(Icons.checklist_outlined, 'По факту', '$totalActual', Colors.orange),
             ),
           ],
         ),
@@ -531,12 +533,12 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard('⚖️', 'Різниця', totalDiff >= 0 ? '+$totalDiff' : '$totalDiff', 
+              child: _buildStatCard(Icons.balance_outlined, 'Різниця', totalDiff >= 0 ? '+$totalDiff' : '$totalDiff', 
                 totalDiff > 0 ? Colors.green : (totalDiff < 0 ? Colors.red : Colors.grey)),
             ),
             const SizedBox(width: 8),
             Expanded(
-              child: _buildStatCard('💰', 'Вартість', '${totalPriceDiff >= 0 ? '+' : ''}${totalPriceDiff.toStringAsFixed(0)}₴', 
+              child: _buildStatCard(Icons.attach_money_outlined, 'Вартість', '${totalPriceDiff >= 0 ? '+' : ''}${totalPriceDiff.toStringAsFixed(0)}₴', 
                 totalPriceDiff >= 0 ? Colors.green : Colors.red),
             ),
           ],
@@ -545,21 +547,17 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     );
   }
 
-  Widget _buildStatCard(String icon, String label, String value, Color color) {
+  Widget _buildStatCard(IconData icon, String label, String value, Color color) {
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: color.withAlpha(25), // ~0.1 opacity
+        color: color.withAlpha(25),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: color.withAlpha(77), width: 1), // ~0.3 opacity
+        border: Border.all(color: color.withAlpha(77), width: 1),
       ),
       child: Column(
         children: [
-          Text(
-            icon,
-            style: const TextStyle(fontSize: 20),
-            textAlign: TextAlign.center,
-          ),
+          Icon(icon, size: 20, color: color),
           const SizedBox(height: 2),
           Text(
             value,

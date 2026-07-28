@@ -1,5 +1,8 @@
 ﻿import 'package:flutter/material.dart';
-import 'recount_session_screen.dart';
+import 'package:provider/provider.dart';
+import '../services/session_storage.dart';
+import 'recount_session_manager.dart';
+import 'recount_new_scan_screen.dart';
 import 'recount_past_sessions_screen.dart';
 
 class RecountMainScreen extends StatelessWidget {
@@ -7,6 +10,9 @@ class RecountMainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final storage = Provider.of<SessionStorage>(context);
+    final activeSession = storage.currentSession;
+
     return Scaffold(
       backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
@@ -36,7 +42,6 @@ class RecountMainScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 const SizedBox(height: 40),
-
                 const Text(
                   'Система переобліку',
                   style: TextStyle(
@@ -46,19 +51,72 @@ class RecountMainScreen extends StatelessWidget {
                   ),
                   textAlign: TextAlign.center,
                 ),
-
                 const SizedBox(height: 8),
-
                 const Text(
                   'Оберіть дію для продовження',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.white70,
-                  ),
+                  style: TextStyle(fontSize: 16, color: Colors.white70),
                   textAlign: TextAlign.center,
                 ),
+                const SizedBox(height: 40),
 
-                const SizedBox(height: 60),
+                if (activeSession != null) ...[
+                  Card(
+                    elevation: 8,
+                    color: Colors.orange.shade700,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(20),
+                    ),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                        sessionManager.loadSession(activeSession.id);
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (context) => RecountNewScanScreen(
+                              sessionId: activeSession.id,
+                              sessionNames: [activeSession.id],
+                            ),
+                          ),
+                        );
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.all(24),
+                        child: Row(
+                          children: [
+                            Container(
+                              decoration: const BoxDecoration(
+                                color: Color(0x33FFFFFF),
+                                shape: BoxShape.circle,
+                              ),
+                              padding: const EdgeInsets.all(12),
+                              child: const Icon(Icons.play_arrow, color: Colors.white, size: 32),
+                            ),
+                            const SizedBox(width: 20),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Продовжити сесію',
+                                    style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'Є незавершений переоблік',
+                                    style: TextStyle(fontSize: 14, color: Colors.white70),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 Card(
                   elevation: 8,
@@ -68,11 +126,16 @@ class RecountMainScreen extends StatelessWidget {
                   ),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
-                    onTap: () {
-                      final sessionId = 'SESSION_${DateTime.now().millisecondsSinceEpoch}';
+                    onTap: () async {
+                      final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                      final sessionId = await sessionManager.startNewSession();
+                      if (!context.mounted) return;
                       Navigator.of(context).push(
                         MaterialPageRoute(
-                          builder: (context) => RecountSessionScreen(sessionId: sessionId),
+                          builder: (context) => RecountNewScanScreen(
+                            sessionId: sessionId,
+                            sessionNames: [sessionId],
+                          ),
                         ),
                       );
                     },
@@ -86,11 +149,7 @@ class RecountMainScreen extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             padding: const EdgeInsets.all(12),
-                            child: const Icon(
-                              Icons.add_circle_outline,
-                              color: Colors.white,
-                              size: 32,
-                            ),
+                            child: const Icon(Icons.add_circle_outline, color: Colors.white, size: 32),
                           ),
                           const SizedBox(width: 20),
                           const Expanded(
@@ -99,36 +158,23 @@ class RecountMainScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'Розпочати нову сесію',
-                                  style: TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.white,
-                                  ),
+                                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
                                   'Створити новий переоблік товарів',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white70,
-                                  ),
+                                  style: TextStyle(fontSize: 14, color: Colors.white70),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white,
-                            size: 20,
-                          ),
+                          const Icon(Icons.arrow_forward_ios, color: Colors.white, size: 20),
                         ],
                       ),
                     ),
                   ),
                 ),
-
-                const SizedBox(height: 20),
-
+                const SizedBox(height: 16),
                 Card(
                   elevation: 4,
                   color: Colors.blueGrey.shade700,
@@ -154,11 +200,7 @@ class RecountMainScreen extends StatelessWidget {
                               shape: BoxShape.circle,
                             ),
                             padding: const EdgeInsets.all(12),
-                            child: const Icon(
-                              Icons.history,
-                              color: Colors.white70,
-                              size: 28,
-                            ),
+                            child: const Icon(Icons.history, color: Colors.white70, size: 28),
                           ),
                           const SizedBox(width: 20),
                           const Expanded(
@@ -167,49 +209,31 @@ class RecountMainScreen extends StatelessWidget {
                               children: [
                                 Text(
                                   'Минулі сесії',
-                                  style: TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.white,
-                                  ),
+                                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: Colors.white),
                                 ),
                                 SizedBox(height: 4),
                                 Text(
                                   'Переглянути історію переобліків',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.white60,
-                                  ),
+                                  style: TextStyle(fontSize: 14, color: Colors.white60),
                                 ),
                               ],
                             ),
                           ),
-                          const Icon(
-                            Icons.arrow_forward_ios,
-                            color: Colors.white70,
-                            size: 18,
-                          ),
+                          const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 18),
                         ],
                       ),
                     ),
                   ),
                 ),
-
                 const Spacer(),
-
                 TextButton.icon(
                   icon: const Icon(Icons.home, color: Colors.blueAccent),
                   label: const Text(
                     'Повернутись на головну',
-                    style: TextStyle(
-                      color: Colors.blueAccent,
-                      fontSize: 16,
-                      decoration: TextDecoration.underline,
-                    ),
+                    style: TextStyle(color: Colors.blueAccent, fontSize: 16, decoration: TextDecoration.underline),
                   ),
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-
                 const SizedBox(height: 20),
               ],
             ),
