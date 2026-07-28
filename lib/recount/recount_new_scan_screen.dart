@@ -350,6 +350,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             onPressed: () {
               final count = _sessionManager?.products.length ?? 0;
               if (count == 0) {
+                final sid = _sessionManager?.currentSessionId;
+                _sessionManager?.clear();
+                if (sid != null) {
+                  Provider.of<SessionStorage>(context, listen: false).deleteSession(sid);
+                }
                 Navigator.of(context).pop();
                 return;
               }
