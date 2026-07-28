@@ -300,10 +300,60 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(
-          icon: const Icon(Icons.close, color: Colors.white),
-          onPressed: () => Navigator.of(context).pop(),
-        ),
+          leading: IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () {
+              final count = _sessionManager?.products.length ?? 0;
+              if (count == 0) {
+                Navigator.of(context).pop();
+                return;
+              }
+              showDialog(
+                context: context,
+                builder: (ctx) => AlertDialog(
+                  backgroundColor: const Color(0xFF1E1E1E),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                  title: const Text('Відкласти переоблік?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                  content: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.inventory, size: 18, color: Colors.orangeAccent),
+                            const SizedBox(width: 6),
+                          Text('$count товарів', style: const TextStyle(color: Colors.white70, fontSize: 14)),
+                        ],
+                      ),
+                    ],
+                  ),
+                  actions: [
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _saveSession();
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Зберегти та вийти', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w600)),
+                    ),
+                    const SizedBox(height: 4),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _sessionManager?.clear();
+                        Navigator.of(context).pop();
+                      },
+                      child: const Text('Не зберігати', style: TextStyle(color: Colors.redAccent)),
+                    ),
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx),
+                      child: const Text('Продовжити', style: TextStyle(color: Colors.white54)),
+                    ),
+                  ],
+                ),
+              );
+            },
+          ),
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
