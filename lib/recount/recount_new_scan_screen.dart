@@ -34,9 +34,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   bool _isScanning = false;
   bool _torchOn = false;
   bool _showProductPanel = false;
-  
-  // Error and success states to match scan.dart design
-  bool _showSuccess = false;
+  bool _readyToScan = true;
+
   bool _hasError = false;
   String _errorMessage = '';
 
@@ -64,6 +63,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         curve: Curves.easeInOut,
       ),
     );
+    _controller.start();
   }
 
   @override
@@ -116,56 +116,50 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   void _toggleTorch() {
     _controller.toggleTorch();
+    setState(() => _torchOn = !_torchOn);
+  }
+
+  void _startSingleScan() {
+    if (_isScanning || _showProductPanel) return;
     setState(() {
-      _torchOn = !_torchOn;
+      _readyToScan = false;
+      _isScanning = true;
     });
   }
 
   Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
-    if (_isScanning) return;
+    if (!_isScanning || _showProductPanel) return;
 
     final barcode = capture.barcodes.first.rawValue;
     if (barcode == null || barcode.isEmpty) return;
 
-    setState(() {
-      _isScanning = true;
-    });
+    setState(() => _isScanning = false);
 
     try {
       if (await Vibration.hasVibrator()) {
-        Vibration.vibrate(duration: 100);
+        try { Vibration.vibrate(duration: 100); } catch (_) {}
       }
       await _processBarcode(barcode);
       if (!mounted) return;
     } catch (_) {
       _showError('Помилка при обробці штрихкоду');
-    } finally {
-      // Add small delay to reduce camera buffer issues
-      await Future.delayed(const Duration(milliseconds: 500));
-      if (mounted) {
-        setState(() {
-          _isScanning = false;
-        });
-      }
     }
   }
 
   Future<void> _processBarcode(String barcode) async {
-    // Check network connection
     final networkService = NetworkService();
     final isConnected = await networkService.isConnected();
-    
+
     if (!isConnected) {
       _showError("Помилка інтернет з'єднання");
       return;
     }
-    
-    // Validate barcode format
+
     if (!barcode.startsWith('210700')) {
       _showError("Невірний штрихкод");
       return;
     }
-    
+
     try {
       final response = await http.get(Uri.parse(
         ApiConfig.productUrl(barcode),
@@ -179,18 +173,17 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             data['response'][1] is List) {
           final productInfo = data['response'][0];
           final storesList = data['response'][1] as List;
-          
-          // Filter for Харківське шосе store only - same logic as result screen
+
           final filteredStores = storesList.where((store) {
             final storeName = (store['name']?.toString().toLowerCase()) ?? '';
             return storeName.contains('харківське шосе');
           }).toList();
-          
+
           if (filteredStores.isEmpty) {
             _showError('Товар не знайдено в магазині Харківське шосе');
             return;
           }
-          
+
           final storeData = filteredStores.first;
 
           if (!mounted) return;
@@ -201,22 +194,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             orElse: () => {},
           );
 
-          // Show success state first
-          setState(() {
-            _showSuccess = true;
-            _hasError = false;
-          });
-          
-          await Future.delayed(const Duration(milliseconds: 800));
-          
-          if (!mounted) return;
-          
-          // Get current actual count and increment by 1
           final currentActualCount = existingProduct.isNotEmpty
               ? (existingProduct['actual_count'] ?? 0)
               : 0;
           final newActualCount = currentActualCount + 1;
-          
+
           setState(() {
             _currentBarcode = barcode;
             _productName = productInfo['good'] ?? 'Невідомий товар';
@@ -224,18 +206,16 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             _stockCount = int.tryParse(storeData['remaining'].toString()) ?? 0;
             _actualCount = newActualCount;
             _actualCountController.text = _actualCount.toString();
-            _showSuccess = false;
             _showProductPanel = true;
           });
 
-          // Add/update product with correct actual count
           sessionManager.addOrUpdateProduct({
             'barcode': barcode,
             'name': _productName!,
             'price': _productPrice!,
             'stock_count': _stockCount!,
-            'actual_count': 1, // Add 1 to existing count
-            'replace': false, // Don't replace, add to existing
+            'actual_count': 1,
+            'replace': false,
           });
         } else {
           _showError('Товар не знайдено в базі даних');
@@ -248,20 +228,21 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     }
   }
 
-  void _showError(String message) async {
+  void _showError(String message) {
     setState(() {
       _errorMessage = message;
       _hasError = true;
-      _showSuccess = false;
+      _readyToScan = true;
       _isScanning = false;
     });
-    await Future.delayed(const Duration(milliseconds: 800));
-    if (mounted) {
-      setState(() {
-        _hasError = false;
-        _errorMessage = '';
-      });
-    }
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) {
+        setState(() {
+          _hasError = false;
+          _errorMessage = '';
+        });
+      }
+    });
   }
 
   void _updateActualCount() {
@@ -277,9 +258,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         'actual_count': newCount,
         'replace': true,
       });
-      setState(() {
-        _actualCount = newCount;
-      });
+      setState(() => _actualCount = newCount);
     }
   }
 
@@ -292,11 +271,22 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       _stockCount = null;
       _actualCount = null;
       _actualCountController.clear();
+      _readyToScan = true;
     });
+  }
+
+  int get _productCount {
+    try {
+      return Provider.of<RecountSessionManager>(context, listen: false).products.length;
+    } catch (_) {
+      return 0;
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final productCount = _productCount;
+
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -306,14 +296,30 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
+        title: productCount > 0
+            ? Container(
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withAlpha(38),
+                  borderRadius: BorderRadius.circular(16),
+                ),
+                child: Text(
+                  '$productCount',
+                  style: const TextStyle(
+                    color: Colors.orangeAccent,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              )
+            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
             onPressed: () {
               _controller.stop();
               final products =
-                  Provider.of<RecountSessionManager>(context, listen: false)
-                      .products;
+                  Provider.of<RecountSessionManager>(context, listen: false).products;
               Navigator.of(context)
                   .push(
                     MaterialPageRoute(
@@ -328,434 +334,325 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           ),
         ],
       ),
-      body: Stack(
-        children: [
-          MobileScanner(
-            controller: _controller,
-            onDetect: _onBarcodeDetected,
-          ),
-          Container(
-            decoration: const BoxDecoration(
-              color: Color.fromARGB(128, 0, 0, 0),
+      body: GestureDetector(
+        onTap: _readyToScan && !_showProductPanel ? _startSingleScan : null,
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: _controller,
+              onDetect: _onBarcodeDetected,
             ),
-            child: Stack(
-              children: [
-                Center(
-                  child: AnimatedBuilder(
-                    animation: _borderAnimation,
-                    builder: (context, child) {
-                      return Container(
-                        width: 250,
-                        height: 250,
-                        decoration: BoxDecoration(
-                          border: Border.all(
-                            color: _isScanning ? Colors.green : Colors.white,
-                            width: _borderAnimation.value,
-                          ),
-                          borderRadius: BorderRadius.circular(12),
+            Container(color: Colors.black.withAlpha(179)),
+            Center(
+              child: AnimatedBuilder(
+                animation: _borderAnimation,
+                builder: (context, child) {
+                  return Container(
+                    width: 280,
+                    height: 280,
+                    decoration: BoxDecoration(
+                      border: Border.all(
+                        color: _hasError
+                            ? Colors.redAccent
+                            : (_isScanning ? Colors.greenAccent : Colors.orangeAccent),
+                        width: _isScanning ? 3 : _borderAnimation.value,
+                      ),
+                      borderRadius: BorderRadius.circular(20),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (_hasError
+                              ? Colors.redAccent
+                              : (_isScanning ? Colors.greenAccent : Colors.orangeAccent))
+                              .withAlpha(77),
+                          blurRadius: 20,
+                          spreadRadius: 2,
                         ),
-                      );
-                    },
+                      ],
+                    ),
+                  );
+                },
+              ),
+            ),
+            if (_readyToScan && !_showProductPanel)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 60,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.black54,
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Text(
+                      'Натисніть на екран для сканування',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 16,
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
                   ),
                 ),
-                Positioned(
-                  top: MediaQuery.of(context).padding.top + 60,
-                  left: 0,
-                  right: 0,
-                  child: Center(
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 10),
-                      decoration: BoxDecoration(
-                        color: const Color.fromARGB(204, 38, 50, 56), // blueGrey.shade900.withOpacity(0.8)
-                        borderRadius: BorderRadius.circular(30),
+              ),
+            if (_isScanning && !_showProductPanel)
+              Positioned(
+                top: MediaQuery.of(context).padding.top + 60,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.green.withAlpha(51),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                        SizedBox(width: 12),
+                        Text(
+                          'Сканування...',
+                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 24,
+              bottom: 48,
+              child: FloatingActionButton(
+                onPressed: _toggleTorch,
+                tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
+                backgroundColor: _torchOn ? Colors.blueAccent : Colors.grey,
+                child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+              ),
+            ),
+            if (_showProductPanel)
+              Positioned(
+                bottom: 0,
+                left: 0,
+                right: 0,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: const BorderRadius.only(
+                      topLeft: Radius.circular(24),
+                      topRight: Radius.circular(24),
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withAlpha(128),
+                        blurRadius: 20,
+                        offset: const Offset(0, -5),
                       ),
-                      child: Text(
-                        _isScanning ? 'Обробка...' : 'Наведіть камеру на штрихкод у рамці',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w600,
-                          shadows: [
-                            Shadow(
-                              blurRadius: 3,
-                              color: Colors.black54,
-                              offset: Offset(0, 1),
-                            )
+                    ],
+                  ),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF2E7D32),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(24),
+                            topRight: Radius.circular(24),
+                          ),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(38),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.check_circle, color: Colors.white, size: 20),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Відскановано',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                              ),
+                            ),
+                            Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white.withAlpha(38),
+                                borderRadius: BorderRadius.circular(20),
+                              ),
+                              child: IconButton(
+                                onPressed: _closeProductPanel,
+                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
+                              ),
+                            ),
                           ],
                         ),
                       ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  bottom: 24,
-                  child: FloatingActionButton(
-                    onPressed: _toggleTorch,
-                    tooltip:
-                        _torchOn ? 'Вимкнути фонарик' : 'Увімкнути фонарик',
-                    backgroundColor:
-                        _torchOn ? Colors.blueAccent : Colors.grey,
-                    child: Icon(
-                      _torchOn ? Icons.flash_on : Icons.flash_off,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-          if (_showProductPanel)
-            Positioned(
-              bottom: 0,
-              left: 0,
-              right: 0,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFFF8F9FA), // Light grey-white
-                      Color(0xFFFFFFFF), // Pure white
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    topLeft: Radius.circular(24),
-                    topRight: Radius.circular(24),
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black.withAlpha(63),
-                      blurRadius: 20,
-                      offset: const Offset(0, -5),
-                      spreadRadius: 0,
-                    ),
-                  ],
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 16, 16),
-                      decoration: const BoxDecoration(
-                        color: Color(0xFF2E7D32), // Dark green
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(24),
-                          topRight: Radius.circular(24),
-                        ),
-                      ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Row(
-                            children: [
-                              Container(
-                                padding: const EdgeInsets.all(8),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withAlpha(63),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: const Icon(
-                                  Icons.check_circle,
-                                  color: Colors.white,
-                                  size: 20,
-                                ),
+                      Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Container(
+                              width: double.infinity,
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.green.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.green.withAlpha(77)),
                               ),
-                              const SizedBox(width: 12),
-                              const Text(
-                                'Товар знайдено',
-                                style: TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Container(
-                            decoration: BoxDecoration(
-                              color: Colors.white.withAlpha(63),
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: IconButton(
-                              onPressed: _closeProductPanel,
-                              icon: const Icon(
-                                Icons.close,
-                                color: Colors.white,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(12, 8, 12, 8),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: double.infinity,
-                            padding: const EdgeInsets.all(8),
-                            decoration: BoxDecoration(
-                              color: const Color(0xFFF1F8E9), // Light green background
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(
-                                color: const Color(0xFF4CAF50).withAlpha(63),
-                                width: 1,
-                              ),
-                            ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _productName ?? '',
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xFF1B5E20), // Dark green text
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 12,
-                                    vertical: 6,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: const Color(0xFF4CAF50),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    _productName ?? '',
                                     style: const TextStyle(
-                                      fontSize: 14,
+                                      fontSize: 16,
                                       fontWeight: FontWeight.w600,
                                       color: Colors.white,
                                     ),
                                   ),
+                                  const SizedBox(height: 8),
+                                  Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                                    decoration: BoxDecoration(
+                                      color: Colors.green,
+                                      borderRadius: BorderRadius.circular(20),
+                                    ),
+                                    child: Text(
+                                      'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
+                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.blue,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: const Text(
+                                          'Фактична кількість',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF2A2A2A),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.blue.withAlpha(77)),
+                                        ),
+                                        child: TextField(
+                                          controller: _actualCountController,
+                                          keyboardType: TextInputType.number,
+                                          onChanged: (value) => _updateActualCount(),
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.white,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                          decoration: InputDecoration(
+                                            filled: true,
+                                            fillColor: const Color(0xFF2A2A2A),
+                                            border: OutlineInputBorder(
+                                              borderRadius: BorderRadius.circular(12),
+                                              borderSide: BorderSide.none,
+                                            ),
+                                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                const SizedBox(width: 16),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.orange,
+                                          borderRadius: BorderRadius.circular(16),
+                                        ),
+                                        child: const Text(
+                                          'Залишок по базі',
+                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
+                                        ),
+                                      ),
+                                      const SizedBox(height: 6),
+                                      Container(
+                                        padding: const EdgeInsets.symmetric(vertical: 16),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF2A2A2A),
+                                          borderRadius: BorderRadius.circular(12),
+                                          border: Border.all(color: Colors.orange.withAlpha(77)),
+                                        ),
+                                        width: double.infinity,
+                                        child: Text(
+                                          _stockCount?.toString() ?? '0',
+                                          style: const TextStyle(
+                                            fontSize: 24,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.orangeAccent,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
                                 ),
                               ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFF1976D2),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Text(
-                                        'Фактична кількість',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withAlpha(13),
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      child: TextField(
-                                        controller: _actualCountController,
-                                        keyboardType: TextInputType.number,
-                                        onChanged: (value) => _updateActualCount(),
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFF1976D2),
-                                        ),
-                                        decoration: InputDecoration(
-                                          filled: true,
-                                          fillColor: Colors.white,
-                                          border: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                              color: const Color(0xFF1976D2).withAlpha(63),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          enabledBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                            borderSide: BorderSide(
-                                              color: const Color(0xFF1976D2).withAlpha(63),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          focusedBorder: OutlineInputBorder(
-                                            borderRadius: BorderRadius.circular(12),
-                                            borderSide: const BorderSide(
-                                              color: Color(0xFF1976D2),
-                                              width: 2,
-                                            ),
-                                          ),
-                                          contentPadding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 16,
-                                          ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                              const SizedBox(width: 16),
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 8,
-                                        vertical: 4,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        color: const Color(0xFFFF9800),
-                                        borderRadius: BorderRadius.circular(16),
-                                      ),
-                                      child: const Text(
-                                        'Залишок по базі',
-                                        style: TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.white,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    Container(
-                                      padding: const EdgeInsets.symmetric(
-                                        horizontal: 16,
-                                        vertical: 16,
-                                      ),
-                                      decoration: BoxDecoration(
-                                        gradient: const LinearGradient(
-                                          colors: [
-                                            Color(0xFFFFF3E0),
-                                            Color(0xFFFFE0B2),
-                                          ],
-                                        ),
-                                        border: Border.all(
-                                          color: const Color(0xFFFF9800).withAlpha(63),
-                                          width: 2,
-                                        ),
-                                        borderRadius: BorderRadius.circular(12),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: Colors.black.withAlpha(13), // 0.05 * 255 ≈ 13
-                                            blurRadius: 8,
-                                            offset: const Offset(0, 2),
-                                          ),
-                                        ],
-                                      ),
-                                      width: double.infinity,
-                                      child: Text(
-                                        _stockCount?.toString() ?? '0',
-                                        style: const TextStyle(
-                                          fontSize: 16,
-                                          fontWeight: FontWeight.w600,
-                                          color: Color(0xFFE65100),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                  ],
-                ),
-              ),
-            ),
-          // Success overlay - matching scan.dart design
-          AnimatedOpacity(
-            duration: const Duration(milliseconds: 300),
-            opacity: _showSuccess ? 1.0 : 0.0,
-            child: _showSuccess
-                ? Positioned.fill(
-                    child: Container(
-                      color: Colors.black54,
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.greenAccent,
-                              size: 80,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'УСПІШНО СКАНОВАНО',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                  )
-                : const SizedBox.shrink(),
-          ),
-          // Error overlay - matching scan.dart design
-          if (_hasError)
-            Positioned(
-              bottom: 80,
-              left: 24,
-              right: 24,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    vertical: 12, horizontal: 20),
-                decoration: BoxDecoration(
-                  color: const Color.fromARGB(229, 255, 82, 82), // redAccent.withOpacity(0.9)
-                  borderRadius: BorderRadius.circular(25),
-                  boxShadow: const [
-                    BoxShadow(
-                      color: Color.fromARGB(128, 255, 82, 82), // redAccent.withOpacity(0.5)
-                      blurRadius: 12,
-                      offset: Offset(0, 3),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  _errorMessage.isEmpty
-                      ? 'Помилка сканування'
-                      : _errorMessage,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.w600,
-                    fontSize: 16,
+                    ],
                   ),
                 ),
               ),
-            ),
-        ],
+            if (_hasError && !_showProductPanel)
+              Positioned(
+                bottom: 100,
+                left: 24,
+                right: 24,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: Colors.redAccent.withAlpha(229),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: const [
+                      BoxShadow(color: Colors.redAccent, blurRadius: 12, offset: Offset(0, 3)),
+                    ],
+                  ),
+                  child: Text(
+                    _errorMessage.isEmpty ? 'Помилка сканування' : _errorMessage,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                  ),
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }
