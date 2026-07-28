@@ -7,6 +7,7 @@ import 'package:http/http.dart' as http;
 import 'package:vibration/vibration.dart';
 import '../services/network_service.dart';
 import '../services/api_config.dart';
+import '../services/session_storage.dart';
 import 'recount_session_manager.dart';
 import 'recount_product_list_screen.dart';
 
@@ -329,19 +330,26 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                   ),
                   actions: [
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(ctx);
-                        _saveSession();
-                        Navigator.of(context).pop();
+                        final nav = Navigator.of(context);
+                        await _saveSession();
+                        nav.pop();
                       },
                       child: const Text('Зберегти та вийти', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w600)),
                     ),
                     const SizedBox(height: 4),
                     TextButton(
-                      onPressed: () {
+                      onPressed: () async {
                         Navigator.pop(ctx);
+                        final sessionId = _sessionManager?.currentSessionId;
+                        final storage = Provider.of<SessionStorage>(context, listen: false);
+                        final nav = Navigator.of(context);
                         _sessionManager?.clear();
-                        Navigator.of(context).pop();
+                        if (sessionId != null) {
+                          await storage.deleteSession(sessionId);
+                        }
+                        nav.pop();
                       },
                       child: const Text('Не зберігати', style: TextStyle(color: Colors.redAccent)),
                     ),
