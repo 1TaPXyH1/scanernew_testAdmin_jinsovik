@@ -226,14 +226,6 @@ class RecountMainScreen extends StatelessWidget {
                   ),
                 ),
                 const Spacer(),
-                TextButton.icon(
-                  icon: const Icon(Icons.home, color: Colors.blueAccent),
-                  label: const Text(
-                    'Повернутись на головну',
-                    style: TextStyle(color: Colors.blueAccent, fontSize: 16, decoration: TextDecoration.underline),
-                  ),
-                  onPressed: () => Navigator.of(context).pop(),
-                ),
                 const SizedBox(height: 20),
               ],
             ),
