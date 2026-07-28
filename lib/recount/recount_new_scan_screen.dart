@@ -278,11 +278,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     });
   }
 
-  int get _productCount => _sessionManager?.products.length ?? 0;
-
   @override
   Widget build(BuildContext context) {
-    final productCount = _productCount;
+    final screenHeight = MediaQuery.of(context).size.height;
+    const boxSize = 260.0;
+    final boxTop = screenHeight * 0.12;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -293,23 +293,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pop(),
         ),
-        title: productCount > 0
-            ? Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
-                decoration: BoxDecoration(
-                  color: Colors.orangeAccent.withAlpha(38),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: Text(
-                  '$productCount',
-                  style: const TextStyle(
-                    color: Colors.orangeAccent,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              )
-            : null,
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
@@ -331,89 +314,85 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         ],
       ),
       body: GestureDetector(
-        onTap: _readyToScan && !_showProductPanel ? _startSingleScan : null,
+        onTap: _readyToScan ? _startSingleScan : null,
         child: Stack(
           children: [
             MobileScanner(
               controller: _controller,
               onDetect: _onBarcodeDetected,
             ),
-            Container(color: Colors.black.withAlpha(179)),
-            Center(
-              child: AnimatedBuilder(
-                animation: _borderAnimation,
-                builder: (context, child) {
-                  return Container(
-                    width: 280,
-                    height: 280,
-                    decoration: BoxDecoration(
-                      border: Border.all(
-                        color: _hasError
-                            ? Colors.redAccent
-                            : (_isScanning ? Colors.greenAccent : Colors.orangeAccent),
-                        width: _isScanning ? 3 : _borderAnimation.value,
-                      ),
-                      borderRadius: BorderRadius.circular(20),
-                      boxShadow: [
-                        BoxShadow(
-                          color: (_hasError
-                              ? Colors.redAccent
-                              : (_isScanning ? Colors.greenAccent : Colors.orangeAccent))
-                              .withAlpha(77),
-                          blurRadius: 20,
-                          spreadRadius: 2,
+            ClipPath(
+              clipper: _ScanOverlayClipper(boxTop: boxTop, boxSize: boxSize),
+              child: Container(color: Colors.black.withAlpha(179)),
+            ),
+            Positioned(
+              top: boxTop,
+              left: 0,
+              right: 0,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _borderAnimation,
+                  builder: (context, child) {
+                    return Container(
+                      width: boxSize,
+                      height: boxSize,
+                      decoration: BoxDecoration(
+                        border: Border.all(
+                          color: _hasError ? Colors.redAccent : Colors.orangeAccent,
+                          width: _hasError ? 3 : _borderAnimation.value,
                         ),
-                      ],
-                    ),
-                  );
-                },
+                        borderRadius: BorderRadius.circular(20),
+                        boxShadow: [
+                          BoxShadow(
+                            color: (_hasError ? Colors.redAccent : Colors.orangeAccent).withAlpha(77),
+                            blurRadius: 20,
+                            spreadRadius: 2,
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
             if (_readyToScan && !_showProductPanel)
               Positioned(
-                top: MediaQuery.of(context).padding.top + 60,
+                top: boxTop + boxSize + 16,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Text(
                       'Натисніть на екран для сканування',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                      ),
+                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
                       textAlign: TextAlign.center,
                     ),
                   ),
                 ),
               ),
-            if (_isScanning && !_showProductPanel)
+            if (_isScanning)
               Positioned(
-                top: MediaQuery.of(context).padding.top + 60,
+                top: boxTop + boxSize + 16,
                 left: 0,
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
-                      color: Colors.green.withAlpha(51),
+                      color: Colors.orangeAccent.withAlpha(51),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
-                        SizedBox(width: 12),
-                        Text(
-                          'Сканування...',
-                          style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600),
-                        ),
+                        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                        SizedBox(width: 10),
+                        Text('Сканування...', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -435,192 +414,94 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 left: 0,
                 right: 0,
                 child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E1E),
                     borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(24),
-                      topRight: Radius.circular(24),
+                      topLeft: Radius.circular(20),
+                      topRight: Radius.circular(20),
                     ),
                     boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withAlpha(128),
-                        blurRadius: 20,
-                        offset: const Offset(0, -5),
-                      ),
+                      BoxShadow(color: Colors.black.withAlpha(128), blurRadius: 16, offset: const Offset(0, -4)),
                     ],
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      Container(
-                        padding: const EdgeInsets.fromLTRB(20, 16, 16, 12),
-                        decoration: const BoxDecoration(
-                          color: Color(0xFF2E7D32),
-                          borderRadius: BorderRadius.only(
-                            topLeft: Radius.circular(24),
-                            topRight: Radius.circular(24),
+                      Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.green.withAlpha(38),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: const Icon(Icons.check_circle, color: Colors.green, size: 18),
                           ),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(38),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(Icons.check_circle, color: Colors.white, size: 20),
-                            ),
-                            const SizedBox(width: 12),
-                            const Expanded(
-                              child: Text(
-                                'Відскановано',
-                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              ),
-                            ),
-                            Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white.withAlpha(38),
-                                borderRadius: BorderRadius.circular(20),
-                              ),
-                              child: IconButton(
-                                onPressed: _closeProductPanel,
-                                icon: const Icon(Icons.close, color: Colors.white, size: 20),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              width: double.infinity,
-                              padding: const EdgeInsets.all(12),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withAlpha(25),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.green.withAlpha(77)),
-                              ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    _productName ?? '',
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                                    decoration: BoxDecoration(
-                                      color: Colors.green,
-                                      borderRadius: BorderRadius.circular(20),
-                                    ),
-                                    child: Text(
-                                      'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
-                                      style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Row(
+                          const SizedBox(width: 10),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.blue,
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                        child: const Text(
-                                          'Фактична кількість',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2A2A2A),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.blue.withAlpha(77)),
-                                        ),
-                                        child: TextField(
-                                          controller: _actualCountController,
-                                          keyboardType: TextInputType.number,
-                                          onChanged: (value) => _updateActualCount(),
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.white,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                          decoration: InputDecoration(
-                                            filled: true,
-                                            fillColor: const Color(0xFF2A2A2A),
-                                            border: OutlineInputBorder(
-                                              borderRadius: BorderRadius.circular(12),
-                                              borderSide: BorderSide.none,
-                                            ),
-                                            contentPadding: const EdgeInsets.symmetric(vertical: 16),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                Text(
+                                  _productName ?? '',
+                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                                const SizedBox(width: 16),
-                                Expanded(
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: Colors.orange,
-                                          borderRadius: BorderRadius.circular(16),
-                                        ),
-                                        child: const Text(
-                                          'Залишок по базі',
-                                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.white),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 6),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(vertical: 16),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF2A2A2A),
-                                          borderRadius: BorderRadius.circular(12),
-                                          border: Border.all(color: Colors.orange.withAlpha(77)),
-                                        ),
-                                        width: double.infinity,
-                                        child: Text(
-                                          _stockCount?.toString() ?? '0',
-                                          style: const TextStyle(
-                                            fontSize: 24,
-                                            fontWeight: FontWeight.bold,
-                                            color: Colors.orangeAccent,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
+                                Text(
+                                  'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
+                                  style: const TextStyle(fontSize: 12, color: Colors.green),
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                          Container(
+                            width: 60,
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withAlpha(25),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.blue.withAlpha(77)),
+                            ),
+                            child: TextField(
+                              controller: _actualCountController,
+                              keyboardType: TextInputType.number,
+                              onChanged: (value) => _updateActualCount(),
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
+                              textAlign: TextAlign.center,
+                              decoration: InputDecoration(
+                                filled: true,
+                                fillColor: Colors.transparent,
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: Colors.orange.withAlpha(25),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.orange.withAlpha(77)),
+                            ),
+                            child: Text(
+                              _stockCount?.toString() ?? '0',
+                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          SizedBox(
+                            width: 32,
+                            height: 32,
+                            child: IconButton(
+                              padding: EdgeInsets.zero,
+                              onPressed: _closeProductPanel,
+                              icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -652,4 +533,25 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       ),
     );
   }
+}
+
+class _ScanOverlayClipper extends CustomClipper<Path> {
+  final double boxTop;
+  final double boxSize;
+
+  _ScanOverlayClipper({required this.boxTop, required this.boxSize});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final centerX = size.width / 2;
+    final boxLeft = centerX - boxSize / 2;
+    final boxRect = Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize);
+    path.addRect(boxRect);
+    return Path.combine(PathOperation.reverseDifference, path, Path()..addRect(boxRect));
+  }
+
+  @override
+  bool shouldReclip(_ScanOverlayClipper oldClipper) =>
+      oldClipper.boxTop != boxTop || oldClipper.boxSize != boxSize;
 }
