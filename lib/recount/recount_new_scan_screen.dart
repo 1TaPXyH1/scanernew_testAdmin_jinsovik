@@ -49,6 +49,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   late AnimationController _borderAnimationController;
   late Animation<double> _borderAnimation;
 
+  RecountSessionManager? _sessionManager;
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +66,12 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       ),
     );
     _controller.start();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
   }
 
   @override
@@ -108,9 +116,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   Future<void> _saveSession() async {
-    final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
-    if (sessionManager.currentSessionId != null) {
-      await sessionManager.saveSessionSnapshot();
+    if (_sessionManager != null && _sessionManager!.currentSessionId != null) {
+      await _sessionManager!.saveSessionSnapshot();
     }
   }
 
@@ -187,9 +194,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           final storeData = filteredStores.first;
 
           if (!mounted) return;
-          final sessionManager =
-              Provider.of<RecountSessionManager>(context, listen: false);
-          final existingProduct = sessionManager.products.firstWhere(
+          final existingProduct = _sessionManager!.products.firstWhere(
             (p) => p['barcode'] == barcode,
             orElse: () => {},
           );
@@ -209,7 +214,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             _showProductPanel = true;
           });
 
-          sessionManager.addOrUpdateProduct({
+          _sessionManager!.addOrUpdateProduct({
             'barcode': barcode,
             'name': _productName!,
             'price': _productPrice!,
@@ -248,9 +253,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   void _updateActualCount() {
     final newCount = int.tryParse(_actualCountController.text) ?? 0;
     if (_currentBarcode != null) {
-      final sessionManager =
-          Provider.of<RecountSessionManager>(context, listen: false);
-      sessionManager.addOrUpdateProduct({
+      _sessionManager!.addOrUpdateProduct({
         'barcode': _currentBarcode!,
         'name': _productName!,
         'price': _productPrice!,
@@ -275,13 +278,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     });
   }
 
-  int get _productCount {
-    try {
-      return Provider.of<RecountSessionManager>(context, listen: false).products.length;
-    } catch (_) {
-      return 0;
-    }
-  }
+  int get _productCount => _sessionManager?.products.length ?? 0;
 
   @override
   Widget build(BuildContext context) {
@@ -318,8 +315,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             icon: const Icon(Icons.list_alt, color: Colors.white),
             onPressed: () {
               _controller.stop();
-              final products =
-                  Provider.of<RecountSessionManager>(context, listen: false).products;
+              final products = _sessionManager!.products;
               Navigator.of(context)
                   .push(
                     MaterialPageRoute(
