@@ -11,13 +11,11 @@ import '../services/api_config.dart';
 class ResultsScreen extends StatefulWidget {
   final String barcode;
   final String selectedStore;
-  final String? errorMessage;
 
   const ResultsScreen({
     super.key,
     required this.barcode,
     required this.selectedStore,
-    this.errorMessage,
   });
 
   @override

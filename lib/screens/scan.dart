@@ -13,16 +13,16 @@ class ScanScreen extends StatefulWidget {
 }
 
 class _ScanScreenState extends State<ScanScreen>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   final MobileScannerController controller = MobileScannerController(
     detectionSpeed: DetectionSpeed.noDuplicates,
     facing: CameraFacing.back,
     torchEnabled: false,
   );
-  bool isScanning = false;
-  bool torchOn = false;
+  bool _isScanning = false;
+  bool _torchOn = false;
+  bool _readyToScan = true;
 
-  bool _showSuccess = false;
   bool _hasError = false;
   String _errorMessage = '';
 
@@ -32,285 +32,329 @@ class _ScanScreenState extends State<ScanScreen>
   @override
   void initState() {
     super.initState();
-
+    WidgetsBinding.instance.addObserver(this);
+    controller.start();
     _borderAnimationController = AnimationController(
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-
     _borderAnimation = Tween<double>(begin: 2, end: 5).animate(
-      CurvedAnimation(
-        parent: _borderAnimationController,
-        curve: Curves.easeInOut,
-      ),
+      CurvedAnimation(parent: _borderAnimationController, curve: Curves.easeInOut),
     );
   }
 
   @override
+  void activate() {
+    super.activate();
+    controller.start();
+  }
+
+  @override
+  void deactivate() {
+    WidgetsBinding.instance.addPostFrameCallback((_) => controller.stop());
+    super.deactivate();
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _borderAnimationController.dispose();
+    controller.stop();
     controller.dispose();
     super.dispose();
   }
 
-  void toggleTorch() {
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    switch (state) {
+      case AppLifecycleState.resumed:
+        controller.start();
+        break;
+      case AppLifecycleState.inactive:
+      case AppLifecycleState.paused:
+      case AppLifecycleState.detached:
+        controller.stop();
+        break;
+      case AppLifecycleState.hidden:
+        break;
+    }
+  }
+
+  void _toggleTorch() {
     controller.toggleTorch();
+    setState(() => _torchOn = !_torchOn);
+  }
+
+  void _startSingleScan() {
+    if (_isScanning) return;
     setState(() {
-      torchOn = !torchOn;
+      _readyToScan = false;
+      _isScanning = true;
     });
   }
 
-  Future<void> _handleBarcode(Barcode barcode) async {
-    if (isScanning) return;
+  Future<void> _onBarcodeDetected(BarcodeCapture capture) async {
+    if (!_isScanning) return;
 
-    setState(() {
-      isScanning = true;
-      _hasError = false;
-      _showSuccess = false;
-    });
+    final barcode = capture.barcodes.first;
+    if (barcode.rawValue == null || barcode.rawValue!.isEmpty) return;
 
-    final code = barcode.rawValue ?? '';
+    setState(() => _isScanning = false);
+
+    final code = barcode.rawValue!;
     final networkService = NetworkService();
     final isConnected = await networkService.isConnected();
 
     if (!mounted) return;
 
     if (!isConnected) {
-      setState(() {
-        _errorMessage = "Помилка інтернет з'єднання";
-        _hasError = true;
-      });
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _hasError = false;
-        isScanning = false;
-      });
+      _showError("Помилка інтернет з'єднання");
       return;
     }
 
     if (!code.startsWith('210700')) {
-      setState(() {
-        _errorMessage = "Невірний штрихкод";
-        _hasError = true;
-      });
-      await Future.delayed(const Duration(seconds: 1));
-      setState(() {
-        _hasError = false;
-        isScanning = false;
-      });
+      _showError("Невірний штрихкод");
       return;
     }
 
-    setState(() {
-      _showSuccess = true;
-    });
-
-    await Future.delayed(const Duration(milliseconds: 1200));
-
     if (!mounted) return;
-
     await Navigator.of(context).pushReplacement(
       MaterialPageRoute(
         builder: (_) => ResultsScreen(
           barcode: code,
           selectedStore: widget.selectedStore,
-          errorMessage: null,
         ),
+      ),
+    );
+  }
+
+  void _showError(String message) {
+    setState(() {
+      _errorMessage = message;
+      _hasError = true;
+      _readyToScan = true;
+    });
+    Future.delayed(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() { _hasError = false; _errorMessage = ''; });
+    });
+  }
+
+  void _showManualEntry() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Ввести штрихкод', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          decoration: InputDecoration(
+            hintText: '2107002621030',
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: const Color(0xFF2A2A2A),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+          ElevatedButton(
+            onPressed: () {
+              final code = controller.text.trim();
+              if (code.isNotEmpty) {
+                Navigator.pop(ctx);
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(
+                    builder: (_) => ResultsScreen(barcode: code, selectedStore: widget.selectedStore),
+                  ),
+                );
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            child: const Text('Пошук', style: TextStyle(color: Colors.white)),
+          ),
+        ],
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final double boxSize = MediaQuery.of(context).size.width * 0.8;
+    final screenSize = MediaQuery.of(context).size;
+    final boxSize = screenSize.width * 0.72;
+    final boxTop = screenSize.height * 0.1;
 
-    return PopScope(
-      canPop: false,
-      child: Semantics(
-        label: 'Екран сканування',
-        child: Scaffold(
-          backgroundColor: Colors.black,
-          appBar: AppBar(
-            backgroundColor: Colors.transparent,
-            elevation: 0,
-            automaticallyImplyLeading: false,
-            title: const Text('Сканер'),
-            centerTitle: true,
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.close),
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (_) => const HomeScreen()),
-                  (route) => false,
-                ),
-                tooltip: 'Закрити сканер',
-              ),
-            ],
+    return Scaffold(
+      backgroundColor: Colors.black,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close, color: Colors.white),
+            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+              MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false,
+            ),
           ),
-          body: Stack(
-            alignment: Alignment.center,
-            children: [
-              MobileScanner(
-                controller: controller,
-                onDetect: (capture) async {
-                  if (capture.barcodes.isEmpty) return;
-                  await _handleBarcode(capture.barcodes.first);
-                },
-              ),
-              Positioned.fill(
-                child: IgnorePointer(
-                  child: Center(
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: boxSize,
-                        height: boxSize,
-                        color: Colors.transparent,
-                      ),
-                    ),
-                  ),
+        ],
+      ),
+      body: GestureDetector(
+        onTap: _readyToScan ? _startSingleScan : null,
+        child: Stack(
+          children: [
+            MobileScanner(
+              controller: controller,
+              onDetect: _onBarcodeDetected,
+            ),
+            ClipPath(
+              clipper: _ScanOverlayClipper(boxTop: boxTop, boxSize: boxSize),
+              child: Container(color: Colors.black.withAlpha(179)),
+            ),
+            Positioned(
+              top: boxTop,
+              left: 0, right: 0,
+              child: Center(
+                child: AnimatedBuilder(
+                  animation: _borderAnimation,
+                  builder: (context, child) {
+                    final color = _hasError ? const Color(0xFFCF6679) : Colors.orangeAccent;
+                    final w = _hasError ? 3.0 : _borderAnimation.value;
+                    return CustomPaint(
+                      size: Size(boxSize, boxSize),
+                      painter: _ScanCornersPainter(color: color, width: w, cornerSize: 30),
+                    );
+                  },
                 ),
               ),
-              AnimatedBuilder(
-                animation: _borderAnimationController,
-                builder: (context, child) {
-                  return Center(
-                    child: Container(
-                      width: boxSize,
-                      height: boxSize,
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: _hasError
-                              ? Colors.redAccent
-                              : Colors.orangeAccent,
-                          width: _borderAnimation.value,
-                        ),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (_hasError
-                                    ? Colors.redAccent
-                                    : Colors.orangeAccent)
-                                .withAlpha(128), // ~0.5 opacity
-                            blurRadius: 12,
-                            spreadRadius: 1,
-                          ),
-                        ],
-                      ),
-                    ),
-                  );
-                },
-              ),
+            ),
+            if (_readyToScan && !_hasError)
               Positioned(
-                top: MediaQuery.of(context).padding.top + 60,
-                left: 0,
-                right: 0,
+                top: boxTop + boxSize + 16,
+                left: 0, right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 20, vertical: 10),
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(204, 38, 50, 56), // blueGrey.shade900.withOpacity(0.8)
-                      borderRadius: BorderRadius.circular(30),
-                    ),
-                    child: const Text(
-                      'Наведіть камеру на штрихкод у рамці',
-                      style: TextStyle(
-                        color: Colors.white,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w600,
-                        shadows: [
-                          Shadow(
-                            blurRadius: 3,
-                            color: Colors.black54,
-                            offset: Offset(0, 1),
-                          )
-                        ],
-                      ),
-                    ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(30)),
+                    child: const Text('Натисніть на екран для сканування',
+                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
                   ),
                 ),
               ),
-              if (_showSuccess)
-                Positioned.fill(
-                  child: AnimatedOpacity(
-                    duration: const Duration(milliseconds: 300),
-                    opacity: _showSuccess ? 1.0 : 0.0,
-                    child: Container(
-                      color: Colors.black54,
-                      child: const Center(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.check_circle,
-                              color: Colors.greenAccent,
-                              size: 80,
-                            ),
-                            SizedBox(height: 16),
-                            Text(
-                              'УСПІШНО СКАНОВАНО',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              if (_hasError)
-                Positioned(
-                  bottom: 80,
-                  left: 24,
-                  right: 24,
+            if (_isScanning)
+              Positioned(
+                top: boxTop + boxSize + 16,
+                left: 0, right: 0,
+                child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(
-                        vertical: 12, horizontal: 20),
-                    decoration: BoxDecoration(
-                      color: const Color.fromARGB(229, 255, 82, 82), // redAccent.withOpacity(0.9)
-                      borderRadius: BorderRadius.circular(25),
-                      boxShadow: const [
-                        BoxShadow(
-                          color: Color.fromARGB(128, 255, 82, 82), // redAccent.withOpacity(0.5)
-                          blurRadius: 12,
-                          offset: Offset(0, 3),
-                        ),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    decoration: BoxDecoration(color: Colors.orangeAccent.withAlpha(51), borderRadius: BorderRadius.circular(30)),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                        SizedBox(width: 10),
+                        Text('Сканування...', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
-                    child: Text(
-                      _errorMessage.isEmpty
-                          ? 'Помилка сканування'
-                          : _errorMessage,
-                      textAlign: TextAlign.center,
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16,
-                      ),
-                    ),
-                  ),
-                ),
-              Positioned(
-                bottom: 24,
-                child: FloatingActionButton(
-                  onPressed: toggleTorch,
-                  tooltip:
-                      torchOn ? 'Вимкнути фонарик' : 'Увімкнути фонарик',
-                  backgroundColor:
-                      torchOn ? Colors.blueAccent : Colors.grey,
-                  child: Icon(
-                    torchOn ? Icons.flash_on : Icons.flash_off,
                   ),
                 ),
               ),
-            ],
-          ),
+            if (_hasError)
+              Positioned(
+                bottom: 100, left: 24, right: 24,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF93000A),
+                    borderRadius: BorderRadius.circular(25),
+                    boxShadow: const [BoxShadow(color: Color(0xFFCF6679), blurRadius: 12, offset: Offset(0, 3))],
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, color: Color(0xFFCF6679), size: 22),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(_errorMessage.isEmpty ? 'Помилка сканування' : _errorMessage,
+                          style: const TextStyle(color: Color(0xFFFFDAD6), fontWeight: FontWeight.w600, fontSize: 14)),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            Positioned(
+              left: 24, bottom: 48,
+              child: FloatingActionButton(
+                onPressed: _toggleTorch,
+                tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
+                backgroundColor: _torchOn ? Colors.orangeAccent : Colors.grey,
+                child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+              ),
+            ),
+            Positioned(
+              right: 24, bottom: 48,
+              child: TextButton.icon(
+                onPressed: _showManualEntry,
+                icon: const Icon(Icons.keyboard_outlined, color: Colors.white54, size: 20),
+                label: const Text('Ввести', style: TextStyle(color: Colors.white54, fontSize: 13)),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+class _ScanOverlayClipper extends CustomClipper<Path> {
+  final double boxTop;
+  final double boxSize;
+  _ScanOverlayClipper({required this.boxTop, required this.boxSize});
+
+  @override
+  Path getClip(Size size) {
+    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final centerX = size.width / 2;
+    final boxRect = Rect.fromLTWH(centerX - boxSize / 2, boxTop, boxSize, boxSize);
+    path.addRect(boxRect);
+    return Path.combine(PathOperation.reverseDifference, path, Path()..addRect(boxRect));
+  }
+
+  @override
+  bool shouldReclip(_ScanOverlayClipper oldClipper) =>
+      oldClipper.boxTop != boxTop || oldClipper.boxSize != boxSize;
+}
+
+class _ScanCornersPainter extends CustomPainter {
+  final Color color;
+  final double width;
+  final double cornerSize;
+  _ScanCornersPainter({required this.color, required this.width, required this.cornerSize});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = width
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(Offset(0, cornerSize), Offset.zero, paint);
+    canvas.drawLine(Offset.zero, Offset(cornerSize, 0), paint);
+    canvas.drawLine(Offset(size.width - cornerSize, 0), Offset(size.width, 0), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, cornerSize), paint);
+    canvas.drawLine(Offset(0, size.height - cornerSize), Offset(0, size.height), paint);
+    canvas.drawLine(Offset(0, size.height), Offset(cornerSize, size.height), paint);
+    canvas.drawLine(Offset(size.width - cornerSize, size.height), Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(size.width, size.height), Offset(size.width, size.height - cornerSize), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ScanCornersPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.width != width;
 }

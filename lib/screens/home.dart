@@ -116,31 +116,31 @@ class _HomeScreenState extends State<HomeScreen> {
                   ),
                 ),
                 const Spacer(flex: 2),
-                GestureDetector(
-                  onTap: _showStorePicker,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.storefront, color: Colors.orangeAccent.shade200, size: 18),
-                      const SizedBox(width: 6),
-                      Text(
-                        selectedStore,
-                        style: TextStyle(
-                          color: Colors.orangeAccent.shade200,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
+                Container(
+                  decoration: BoxDecoration(
+                    color: Colors.orangeAccent.withAlpha(25),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.orangeAccent.withAlpha(63)),
+                  ),
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(16),
+                    onTap: _showStorePicker,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.storefront, color: Colors.orangeAccent.shade200, size: 20),
+                          const SizedBox(width: 10),
+                          Text(
+                            selectedStore,
+                            style: TextStyle(color: Colors.orangeAccent.shade200, fontSize: 17, fontWeight: FontWeight.w600),
+                          ),
+                          const SizedBox(width: 6),
+                          Icon(Icons.expand_more, color: Colors.orangeAccent.shade200.withAlpha(179), size: 22),
+                        ],
                       ),
-                      const SizedBox(width: 4),
-                      Text(
-                        'Змінити',
-                        style: TextStyle(
-                          color: Colors.orangeAccent.shade200.withAlpha(128),
-                          fontSize: 14,
-                        ),
-                      ),
-                      Icon(Icons.chevron_right, color: Colors.orangeAccent.shade200.withAlpha(128), size: 18),
-                    ],
+                    ),
                   ),
                 ),
                 const SizedBox(height: 48),
