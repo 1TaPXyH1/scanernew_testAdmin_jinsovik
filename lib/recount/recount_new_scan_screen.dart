@@ -310,7 +310,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             onPressed: () {
               _controller.stop();
               final products = _sessionManager!.products;
-              Navigator.of(context)
+              final nav = Navigator.of(context);
+              nav
                   .push(
                     MaterialPageRoute(
                       builder: (context) => RecountProductListScreen(
@@ -319,7 +320,13 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                       ),
                     ),
                   )
-                  .then((_) => _controller.start());
+                  .then((result) {
+                    if (result == 'finish') {
+                      nav.pop();
+                    } else {
+                      _controller.start();
+                    }
+                  });
             },
           ),
         ],

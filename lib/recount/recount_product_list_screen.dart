@@ -150,6 +150,16 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
+                      Row(
+                        children: [
+                          const Icon(Icons.qr_code, size: 14, color: Colors.white38),
+                          const SizedBox(width: 4),
+                          Text(
+                            product['barcode']?.toString() ?? '',
+                            style: const TextStyle(color: Colors.white38, fontSize: 12),
+                          ),
+                        ],
+                      ),
                       if ((product['comment'] ?? '').toString().isNotEmpty)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
@@ -385,82 +395,172 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
       text: product['comment']?.toString() ?? '',
     );
 
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF424242),
-        title: const Text('Редагувати товар', style: TextStyle(color: Colors.white)),
-        content: Column(
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Padding(
+        padding: const EdgeInsets.all(24),
+        child: Column(
           mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              product['name']?.toString() ?? '',
-              style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+            Center(
+              child: Container(
+                width: 40, height: 4,
+                decoration: BoxDecoration(color: Colors.white24, borderRadius: BorderRadius.circular(2)),
+              ),
+            ),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withAlpha(25),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.edit, color: Colors.blue, size: 20),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('Редагувати товар',
+                    style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold)),
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.withAlpha(25),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.qr_code, size: 16, color: Colors.white54),
+                  const SizedBox(width: 8),
+                  Text(product['barcode']?.toString() ?? '',
+                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
+                ],
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(product['name']?.toString() ?? '',
+              style: const TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.w600)),
+            const SizedBox(height: 20),
+            Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Кількість по факту', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2A2A),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.blue.withAlpha(77)),
+                        ),
+                        child: TextField(
+                          controller: actualCountController,
+                          keyboardType: TextInputType.number,
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                          textAlign: TextAlign.center,
+                          decoration: InputDecoration(
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+                            contentPadding: const EdgeInsets.symmetric(vertical: 14),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Залишок', style: TextStyle(color: Colors.white70, fontSize: 13)),
+                      const SizedBox(height: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2A2A2A),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.orange.withAlpha(77)),
+                        ),
+                        width: double.infinity,
+                        child: Text(
+                          _toInt(product['stock_count']).toString(),
+                          style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             TextField(
-              controller: actualCountController,
-              keyboardType: TextInputType.number,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Кількість по факту',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
+              controller: commentController,
+              style: const TextStyle(color: Colors.white, fontSize: 14),
+              maxLines: 2,
+              decoration: InputDecoration(
+                hintText: 'Коментар',
+                hintStyle: const TextStyle(color: Colors.white38),
+                filled: true,
+                fillColor: const Color(0xFF2A2A2A),
+                border: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
-                ),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               ),
             ),
-            const SizedBox(height: 12),
-            TextField(
-              controller: commentController,
-              style: const TextStyle(color: Colors.white),
-              decoration: const InputDecoration(
-                labelText: 'Коментар',
-                labelStyle: TextStyle(color: Colors.white70),
-                enabledBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.white70),
+            const SizedBox(height: 24),
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Colors.white24),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Скасувати', style: TextStyle(color: Colors.white54, fontSize: 16)),
+                  ),
                 ),
-                focusedBorder: OutlineInputBorder(
-                  borderSide: BorderSide(color: Colors.blue),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: ElevatedButton(
+                    onPressed: () {
+                      final newActualCount = int.tryParse(actualCountController.text) ?? 0;
+                      final newComment = commentController.text.trim();
+                      final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                      sessionManager.updateProduct(product['barcode'], newActualCount, newComment);
+                      Navigator.pop(ctx);
+                      setState(() {});
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
+                    ),
+                    child: const Text('Зберегти', style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                  ),
                 ),
-              ),
+              ],
             ),
           ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('Скасувати', style: TextStyle(color: Colors.grey)),
-          ),
-          TextButton(
-            onPressed: () {
-              final newActualCount = int.tryParse(actualCountController.text) ?? 0;
-              final newComment = commentController.text.trim();
-              
-              // Оновлюємо товар у сесії
-              final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
-              sessionManager.updateProduct(
-                product['barcode'],
-                newActualCount,
-                newComment,
-              );
-              
-              Navigator.pop(context);
-              setState(() {}); // Оновлюємо UI
-              
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text('Товар "${product['name']}" оновлено'),
-                  backgroundColor: Colors.green,
-                ),
-              );
-            },
-            child: const Text('Зберегти', style: TextStyle(color: Colors.blue)),
-          ),
-        ],
       ),
     );
   }
