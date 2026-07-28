@@ -190,7 +190,11 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                               Colors.green,
                             ),
                           ),
-                          const SizedBox(width: 8),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Row(
+                        children: [
                           Expanded(
                             child: _buildInfoChip(
                               'По факту', 

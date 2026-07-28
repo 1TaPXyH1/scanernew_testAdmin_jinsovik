@@ -197,7 +197,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.qr_code_scanner, size: 60, color: Colors.blueAccent),
+              Icon(Icons.qr_code_scanner, size: 60, color: Colors.orangeAccent),
               SizedBox(height: 24),
               SizedBox(width: 200, height: 24),
               SizedBox(height: 16),
@@ -236,7 +236,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 icon: const Icon(Icons.qr_code_scanner),
                 label: const Text('Сканувати ще'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.lightBlue.shade700,
+                  backgroundColor: Colors.orange.shade700,
                   foregroundColor: Colors.white,
                   shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12)),
@@ -312,7 +312,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               color: Colors.white12,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 20, color: Colors.lightBlueAccent.shade100),
+            child: Icon(icon, size: 20, color: Colors.orangeAccent),
           ),
           const SizedBox(width: 12),
           Expanded(

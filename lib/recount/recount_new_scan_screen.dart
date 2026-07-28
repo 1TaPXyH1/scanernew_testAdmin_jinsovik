@@ -289,6 +289,50 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     });
   }
 
+  void _showManualEntry() {
+    final controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Ввести штрихкод', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: TextField(
+          controller: controller,
+          keyboardType: TextInputType.number,
+          style: const TextStyle(color: Colors.white, fontSize: 18),
+          decoration: InputDecoration(
+            hintText: '2107002621030',
+            hintStyle: const TextStyle(color: Colors.white30),
+            filled: true,
+            fillColor: const Color(0xFF2A2A2A),
+            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          ),
+          autofocus: true,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              final barcode = controller.text.trim();
+              if (barcode.isNotEmpty) {
+                Navigator.pop(ctx);
+                _startSingleScan();
+                _processBarcode(barcode);
+              }
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            child: const Text('Пошук', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final screenWidth = MediaQuery.of(context).size.width;
@@ -409,23 +453,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 child: AnimatedBuilder(
                   animation: _borderAnimation,
                   builder: (context, child) {
-                    return Container(
-                      width: boxSize,
-                      height: boxSize,
-                      decoration: BoxDecoration(
-                        border: Border.all(
-                          color: _hasError ? Colors.redAccent : Colors.orangeAccent,
-                          width: _hasError ? 3 : _borderAnimation.value,
-                        ),
-                        borderRadius: BorderRadius.circular(20),
-                        boxShadow: [
-                          BoxShadow(
-                            color: (_hasError ? Colors.redAccent : Colors.orangeAccent).withAlpha(77),
-                            blurRadius: 20,
-                            spreadRadius: 2,
-                          ),
-                        ],
-                      ),
+                    final color = _hasError ? Colors.redAccent : Colors.orangeAccent;
+                    final w = _hasError ? 3.0 : _borderAnimation.value;
+                    return CustomPaint(
+                      size: Size(boxSize, boxSize),
+                      painter: _ScanCornersPainter(color: color, width: w, cornerSize: 30),
                     );
                   },
                 ),
@@ -480,8 +512,17 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               child: FloatingActionButton(
                 onPressed: _toggleTorch,
                 tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
-                backgroundColor: _torchOn ? Colors.blueAccent : Colors.grey,
+                backgroundColor: _torchOn ? Colors.orangeAccent : Colors.grey,
                 child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+              ),
+            ),
+            Positioned(
+              right: 24,
+              bottom: 48,
+              child: TextButton.icon(
+                onPressed: _showManualEntry,
+                icon: const Icon(Icons.keyboard_outlined, color: Colors.white54, size: 20),
+                label: const Text('Ввести', style: TextStyle(color: Colors.white54, fontSize: 13)),
               ),
             ),
             if (_showProductPanel)
@@ -630,4 +671,38 @@ class _ScanOverlayClipper extends CustomClipper<Path> {
   @override
   bool shouldReclip(_ScanOverlayClipper oldClipper) =>
       oldClipper.boxTop != boxTop || oldClipper.boxSize != boxSize;
+}
+
+class _ScanCornersPainter extends CustomPainter {
+  final Color color;
+  final double width;
+  final double cornerSize;
+
+  _ScanCornersPainter({required this.color, required this.width, required this.cornerSize});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..strokeWidth = width
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+
+    // Top-left
+    canvas.drawLine(Offset(0, cornerSize), Offset.zero, paint);
+    canvas.drawLine(Offset.zero, Offset(cornerSize, 0), paint);
+    // Top-right
+    canvas.drawLine(Offset(size.width - cornerSize, 0), Offset(size.width, 0), paint);
+    canvas.drawLine(Offset(size.width, 0), Offset(size.width, cornerSize), paint);
+    // Bottom-left
+    canvas.drawLine(Offset(0, size.height - cornerSize), Offset(0, size.height), paint);
+    canvas.drawLine(Offset(0, size.height), Offset(cornerSize, size.height), paint);
+    // Bottom-right
+    canvas.drawLine(Offset(size.width - cornerSize, size.height), Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(size.width, size.height), Offset(size.width, size.height - cornerSize), paint);
+  }
+
+  @override
+  bool shouldRepaint(_ScanCornersPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.width != width;
 }

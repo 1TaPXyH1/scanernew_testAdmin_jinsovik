@@ -183,14 +183,14 @@ class _ScanScreenState extends State<ScanScreen>
                         border: Border.all(
                           color: _hasError
                               ? Colors.redAccent
-                              : Colors.blueAccent,
+                              : Colors.orangeAccent,
                           width: _borderAnimation.value,
                         ),
                         boxShadow: [
                           BoxShadow(
                             color: (_hasError
                                     ? Colors.redAccent
-                                    : Colors.blueAccent)
+                                    : Colors.orangeAccent)
                                 .withAlpha(128), // ~0.5 opacity
                             blurRadius: 12,
                             spreadRadius: 1,
