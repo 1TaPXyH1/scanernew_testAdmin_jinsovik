@@ -280,9 +280,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   @override
   Widget build(BuildContext context) {
+    final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
-    const boxSize = 260.0;
-    final boxTop = screenHeight * 0.12;
+    final boxSize = screenWidth * 0.72;
+    final boxTop = screenHeight * 0.1;
 
     return Scaffold(
       backgroundColor: Colors.black,
