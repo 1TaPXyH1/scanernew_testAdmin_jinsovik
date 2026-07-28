@@ -1,4 +1,5 @@
-﻿import 'package:flutter/material.dart';
+﻿import 'dart:async';
+import 'package:flutter/material.dart';
 import 'screens/home.dart';
 import 'package:provider/provider.dart';
 import 'services/session_storage.dart';
@@ -9,14 +10,22 @@ void main() async {
   final storage = SessionStorage();
   await storage.load();
 
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => storage),
-        ChangeNotifierProvider(create: (_) => RecountSessionManager(storage)),
-      ],
-      child: const BarcodeScannerApp(),
+  FlutterError.onError = (details) {
+    FlutterError.presentError(details);
+    debugPrint('Unhandled Flutter error: ${details.exception}');
+  };
+
+  runZonedGuarded(
+    () => runApp(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => storage),
+          ChangeNotifierProvider(create: (_) => RecountSessionManager(storage)),
+        ],
+        child: const BarcodeScannerApp(),
+      ),
     ),
+    (error, stack) => debugPrint('Unhandled zone error: $error\n$stack'),
   );
 }
 

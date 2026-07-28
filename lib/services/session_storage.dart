@@ -66,16 +66,12 @@ class SessionStorage extends ChangeNotifier {
   }
 
   Future<void> _save() async {
-    try {
-      final file = await _getFile();
-      final data = {
-        'currentSessionId': _currentSessionId,
-        'sessions': _allSessions.map((s) => s.toJson()).toList(),
-      };
-      await file.writeAsString(json.encode(data));
-    } catch (e) {
-      debugPrint('SessionStorage save error: $e');
-    }
+    final file = await _getFile();
+    final data = {
+      'currentSessionId': _currentSessionId,
+      'sessions': _allSessions.map((s) => s.toJson()).toList(),
+    };
+    await file.writeAsString(json.encode(data));
   }
 
   Future<File> _getFile() async {
