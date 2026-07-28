@@ -23,10 +23,18 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Future<void> _loadVersion() async {
-    final packageInfo = await PackageInfo.fromPlatform();
-    setState(() {
-      _appVersion = 'Версія ${packageInfo.version}';
-    });
+    try {
+      final packageInfo = await PackageInfo.fromPlatform();
+      if (mounted) {
+        setState(() {
+          _appVersion = 'Версія ${packageInfo.version}';
+        });
+      }
+    } catch (_) {
+      if (mounted) {
+        setState(() => _appVersion = 'Версія 1.0');
+      }
+    }
   }
 
   void _showStorePicker() {

@@ -632,16 +632,24 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   decoration: BoxDecoration(
-                    color: Colors.redAccent.withAlpha(229),
+                    color: const Color(0xFF93000A),
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: const [
-                      BoxShadow(color: Colors.redAccent, blurRadius: 12, offset: Offset(0, 3)),
+                      BoxShadow(color: Color(0xFFCF6679), blurRadius: 12, offset: Offset(0, 3)),
                     ],
                   ),
-                  child: Text(
-                    _errorMessage.isEmpty ? 'Помилка сканування' : _errorMessage,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w600, fontSize: 16),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const Icon(Icons.error_outline, color: Color(0xFFCF6679), size: 22),
+                      const SizedBox(width: 10),
+                      Flexible(
+                        child: Text(
+                          _errorMessage.isEmpty ? 'Помилка сканування' : _errorMessage,
+                          style: const TextStyle(color: Color(0xFFFFDAD6), fontWeight: FontWeight.w600, fontSize: 14),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
               ),

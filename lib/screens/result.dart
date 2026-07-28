@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -23,9 +24,13 @@ class ResultsScreen extends StatefulWidget {
   State<ResultsScreen> createState() => _ResultsScreenState();
 }
 
+enum _ErrorType { none, network, server, notFound }
+
 class _ResultsScreenState extends State<ResultsScreen> {
   Map<String, dynamic>? productData;
   bool isLoading = true;
+  String? _errorMessage;
+  _ErrorType _errorType = _ErrorType.none;
 
   @override
   void initState() {
@@ -43,7 +48,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
     try {
       final response = await http.get(Uri.parse(
         ApiConfig.productUrl(widget.barcode),
-      ));
+      )).timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
@@ -65,6 +70,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               setState(() {
                 productData = null;
                 isLoading = false;
+                _errorType = _ErrorType.notFound;
               });
               return;
             }
@@ -93,10 +99,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               isLoading = false;
             });
           } else {
-            // Optimized logic for specific store selection (especially Харківське шосе)
             final selectedLower = widget.selectedStore.toLowerCase();
-            
-            // For Харківське шосе, use direct search for faster results
             final filteredStores = storesList.where((store) {
               final storeName = extractShortName(store['name']).toLowerCase();
               return storeName.contains(selectedLower);
@@ -106,6 +109,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               setState(() {
                 productData = null;
                 isLoading = false;
+                _errorType = _ErrorType.notFound;
               });
               return;
             }
@@ -152,19 +156,31 @@ class _ResultsScreenState extends State<ResultsScreen> {
           setState(() {
             productData = null;
             isLoading = false;
+            _errorType = _ErrorType.notFound;
           });
         }
       } else {
         setState(() {
           productData = null;
           isLoading = false;
+          _errorMessage = 'Помилка сервера: ${response.statusCode}';
+          _errorType = _ErrorType.server;
         });
       }
+    } on TimeoutException {
+      setState(() {
+        productData = null;
+        isLoading = false;
+        _errorMessage = 'Сервер не відповідає.\nПеревірте з\'єднання та спробуйте ще раз.';
+        _errorType = _ErrorType.network;
+      });
     } catch (e) {
       debugPrint('fetchProductData error: $e');
       setState(() {
         productData = null;
         isLoading = false;
+        _errorMessage = 'Помилка з\'єднання.\nПеревірте інтернет та спробуйте ще раз.';
+        _errorType = _ErrorType.network;
       });
     }
   }
@@ -179,12 +195,12 @@ class _ResultsScreenState extends State<ResultsScreen> {
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: widget.errorMessage != null
-          ? _buildError()
-          : isLoading
-              ? _buildLoading()
+      body: isLoading
+          ? _buildLoading()
+          : _errorType != _ErrorType.none
+              ? _buildErrorScreen()
               : productData == null
-                  ? _buildNotFound()
+                  ? _buildErrorScreen()
                   : (productData?.containsKey('multiple') ?? false)
                       ? _buildMultipleResults()
                       : _buildSingleResult(),
@@ -207,45 +223,87 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ),
       );
 
-  Widget _buildError() => Center(
-        child: Text(widget.errorMessage!,
-            style: const TextStyle(color: Colors.redAccent)),
-      );
+  Widget _buildErrorScreen() {
+    final isNetwork = _errorType == _ErrorType.network;
+    final icon = isNetwork ? Icons.cloud_off : Icons.search_off;
+    final title = isNetwork
+        ? (_errorMessage ?? 'Помилка з\'єднання')
+        : 'Товар зі штрихкодом\n${widget.barcode}\nне знайдено';
 
-  Widget _buildNotFound() => Center(
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(24),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            const Icon(Icons.search_off, size: 100, color: Colors.redAccent),
-            const SizedBox(height: 16),
+            Icon(icon, size: 80, color: const Color(0xFFCF6679)),
+            const SizedBox(height: 20),
             Text(
-              'Товар зі штрихкодом\n${widget.barcode}\nне знайдено',
-              style: const TextStyle(color: Colors.white70),
+              title,
+              style: const TextStyle(color: Colors.white70, fontSize: 16),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 20),
-            SizedBox(
-              width: 200,
-              child: ElevatedButton.icon(
-                onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(
-                      builder: (_) =>
-                          ScanScreen(selectedStore: widget.selectedStore)),
-                  (_) => false,
+            const SizedBox(height: 28),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                if (isNetwork) ...[
+                  ElevatedButton.icon(
+                    onPressed: () {
+                      setState(() {
+                        isLoading = true;
+                        _errorType = _ErrorType.none;
+                      });
+                      fetchProductData();
+                    },
+                    icon: const Icon(Icons.refresh, size: 20),
+                    label: const Text('Повторити'),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.orangeAccent,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                ],
+                ElevatedButton.icon(
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            ScanScreen(selectedStore: widget.selectedStore)),
+                    (_) => false,
+                  ),
+                  icon: const Icon(Icons.qr_code_scanner, size: 20),
+                  label: const Text('Сканувати ще'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange.shade700,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  ),
                 ),
-                icon: const Icon(Icons.qr_code_scanner),
-                label: const Text('Сканувати ще'),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.orange.shade700,
-                  foregroundColor: Colors.white,
-                  shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+              ],
+            ),
+            if (!isNetwork)
+              Padding(
+                padding: const EdgeInsets.only(top: 12),
+                child: TextButton.icon(
+                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                    MaterialPageRoute(
+                        builder: (_) =>
+                            ScanScreen(selectedStore: widget.selectedStore)),
+                    (_) => false,
+                  ),
+                  icon: const Icon(Icons.keyboard_outlined, size: 18, color: Colors.white54),
+                  label: const Text('Ввести інший штрихкод', style: TextStyle(color: Colors.white54)),
                 ),
               ),
-            ),
           ],
         ),
-      );
+      ),
+    );
+  }
 
   Widget _buildSingleResult() => ListView(
         padding: const EdgeInsets.all(20),
