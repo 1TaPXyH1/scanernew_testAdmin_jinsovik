@@ -108,10 +108,6 @@ class _HomeScreenState extends State<HomeScreen> {
                         ),
                       ),
                       const Spacer(),
-                      IconButton(
-                        icon: const Icon(Icons.settings_outlined, color: Colors.white54, size: 22),
-                        onPressed: () {},
-                      ),
                     ],
                   ),
                 ),
@@ -228,7 +224,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   _appVersion,
                   style: const TextStyle(
                     fontSize: 13,
-                    color: Colors.grey,
+                    color: Colors.white54,
                     fontWeight: FontWeight.w500,
                   ),
                 ),

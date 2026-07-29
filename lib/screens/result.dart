@@ -3,7 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:vibration/vibration.dart';
-import '../widgets/shimmer_loading.dart';
+import '../widgets/pulsing_opacity.dart';
 import '../screens/scan.dart';
 import '../screens/home.dart';
 import '../services/api_config.dart';
@@ -207,7 +207,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildLoading() => const Center(
-        child: ShimmerLoadingWidget(
+        child: PulsingOpacityWidget(
           isLoading: true,
           child: Column(
             mainAxisSize: MainAxisSize.min,

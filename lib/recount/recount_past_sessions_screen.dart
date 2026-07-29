@@ -1,6 +1,8 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+import 'package:printing/printing.dart';
 import '../services/session_storage.dart';
+import '../utils/pdf_generator.dart';
 
 class RecountPastSessionsScreen extends StatelessWidget {
   const RecountPastSessionsScreen({Key? key}) : super(key: key);
@@ -107,6 +109,17 @@ class RecountPastSessionsScreen extends StatelessWidget {
                                       ),
                                   ],
                                 ),
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.picture_as_pdf, color: Colors.orangeAccent, size: 20),
+                                onPressed: () async {
+                                  final file = await PdfGenerator.generateRecountReport(
+                                    products: session.products,
+                                    sessionNames: [''],
+                                  );
+                                  if (!context.mounted) return;
+                                  Printing.sharePdf(bytes: await file.readAsBytes(), filename: 'recount_${session.id}.pdf');
+                                },
                               ),
                               IconButton(
                                 icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
