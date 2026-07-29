@@ -50,7 +50,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   late AnimationController _borderAnimationController;
   late Animation<double> _borderAnimation;
 
-  RecountSessionManager? _sessionManager;
+  late final RecountSessionManager _sessionManager;
 
   @override
   void initState() {
@@ -90,7 +90,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    _saveSession();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _saveSession());
     _borderAnimationController.dispose();
     _controller.stop();
     _controller.dispose();
@@ -117,8 +117,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   Future<void> _saveSession() async {
-    if (_sessionManager != null && _sessionManager!.currentSessionId != null) {
-      await _sessionManager!.saveSessionSnapshot();
+    if (_sessionManager.currentSessionId != null) {
+      await _sessionManager.saveSessionSnapshot();
     }
   }
 
@@ -205,7 +205,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           final storeData = filteredStores.first;
 
           if (!mounted) return;
-          final existingProduct = _sessionManager!.products.firstWhere(
+          final existingProduct = _sessionManager.products.firstWhere(
             (p) => p['barcode'] == barcode,
             orElse: () => {},
           );
@@ -225,7 +225,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             _showProductPanel = true;
           });
 
-          _sessionManager!.addOrUpdateProduct({
+          _sessionManager.addOrUpdateProduct({
             'barcode': barcode,
             'name': _productName!,
             'price': _productPrice!,
@@ -264,7 +264,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   void _updateActualCount() {
     final newCount = int.tryParse(_actualCountController.text) ?? 0;
     if (_currentBarcode != null) {
-      _sessionManager!.addOrUpdateProduct({
+      _sessionManager.addOrUpdateProduct({
         'barcode': _currentBarcode!,
         'name': _productName!,
         'price': _productPrice!,
@@ -313,12 +313,16 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         ),
         actions: [
           TextButton(
-            onPressed: () => Navigator.pop(ctx),
+            onPressed: () {
+              controller.dispose();
+              Navigator.pop(ctx);
+            },
             child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
               final barcode = controller.text.trim();
+              controller.dispose();
               if (barcode.isNotEmpty) {
                 Navigator.pop(ctx);
                 _startSingleScan();
@@ -349,10 +353,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           leading: IconButton(
             icon: const Icon(Icons.close, color: Colors.white),
             onPressed: () {
-              final count = _sessionManager?.products.length ?? 0;
+              final count = _sessionManager.products.length;
               if (count == 0) {
-                final sid = _sessionManager?.currentSessionId;
-                _sessionManager?.clear();
+                final sid = _sessionManager.currentSessionId;
+                _sessionManager.clear();
                 if (sid != null) {
                   Provider.of<SessionStorage>(context, listen: false).deleteSession(sid);
                 }
@@ -392,10 +396,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                     TextButton(
                       onPressed: () async {
                         Navigator.pop(ctx);
-                        final sessionId = _sessionManager?.currentSessionId;
+                        final sessionId = _sessionManager.currentSessionId;
                         final storage = Provider.of<SessionStorage>(context, listen: false);
                         final nav = Navigator.of(context);
-                        _sessionManager?.clear();
+                        _sessionManager.clear();
                         if (sessionId != null) {
                           await storage.deleteSession(sessionId);
                         }
@@ -417,7 +421,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             icon: const Icon(Icons.list_alt, color: Colors.white),
             onPressed: () {
               _controller.stop();
-              final products = _sessionManager!.products;
+              final products = _sessionManager.products;
               final nav = Navigator.of(context);
               nav
                   .push(

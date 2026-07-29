@@ -172,10 +172,17 @@ class _ScanScreenState extends State<ScanScreen>
           autofocus: true,
         ),
         actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('Скасувати', style: TextStyle(color: Colors.white54))),
+          TextButton(
+            onPressed: () {
+              controller.dispose();
+              Navigator.pop(ctx);
+            },
+            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+          ),
           ElevatedButton(
             onPressed: () {
               final code = controller.text.trim();
+              controller.dispose();
               if (code.isNotEmpty) {
                 Navigator.pop(ctx);
                 Navigator.of(context).pushReplacement(

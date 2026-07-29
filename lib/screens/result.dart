@@ -47,6 +47,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
       final response = await http.get(Uri.parse(
         ApiConfig.productUrl(widget.barcode),
       )).timeout(const Duration(seconds: 10));
+      if (!mounted) return;
 
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);

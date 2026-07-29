@@ -535,7 +535,11 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => Navigator.pop(ctx),
+                    onPressed: () {
+                      actualCountController.dispose();
+                      commentController.dispose();
+                      Navigator.pop(ctx);
+                    },
                     style: OutlinedButton.styleFrom(
                       side: const BorderSide(color: Colors.white24),
                       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -550,6 +554,8 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                     onPressed: () {
                       final newActualCount = int.tryParse(actualCountController.text) ?? 0;
                       final newComment = commentController.text.trim();
+                      actualCountController.dispose();
+                      commentController.dispose();
                       final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
                       sessionManager.updateProduct(product['barcode'], newActualCount, newComment);
                       Navigator.pop(ctx);
