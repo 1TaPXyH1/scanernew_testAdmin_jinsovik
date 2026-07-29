@@ -290,6 +290,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   void _showManualEntry() {
+    setState(() {
+      _isScanning = false;
+      _readyToScan = true;
+    });
     final controller = TextEditingController();
     showDialog(
       context: context,
