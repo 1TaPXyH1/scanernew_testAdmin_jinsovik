@@ -342,6 +342,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
@@ -439,7 +440,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         ],
       ),
       body: GestureDetector(
-        onTap: _readyToScan ? _startSingleScan : null,
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          if (_readyToScan) _startSingleScan();
+        },
         child: Stack(
           children: [
             MobileScanner(
@@ -589,7 +593,9 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                             child: TextField(
                               controller: _actualCountController,
                               keyboardType: TextInputType.number,
+                              textInputAction: TextInputAction.done,
                               onChanged: (value) => _updateActualCount(),
+                              onSubmitted: (_) => FocusScope.of(context).unfocus(),
                               style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
                               textAlign: TextAlign.center,
                               decoration: InputDecoration(
