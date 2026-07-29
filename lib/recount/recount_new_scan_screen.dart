@@ -541,7 +541,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 right: 0,
                 child: Container(
                   width: double.infinity,
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
                   decoration: BoxDecoration(
                     color: const Color(0xFF1E1E1E),
                     borderRadius: const BorderRadius.only(
@@ -554,79 +554,179 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                   ),
                   child: Column(
                     mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Row(
                         children: [
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.green.withAlpha(38),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: const Icon(Icons.check_circle, color: Colors.green, size: 18),
+                          const Icon(Icons.qr_code, size: 14, color: Colors.white38),
+                          const SizedBox(width: 4),
+                          Text(
+                            _currentBarcode ?? '',
+                            style: const TextStyle(color: Colors.white38, fontSize: 12),
                           ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _productName ?? '',
-                                  style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Colors.white),
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                                Text(
-                                  'Ціна: ${_productPrice?.toStringAsFixed(2) ?? ''} грн',
-                                  style: const TextStyle(fontSize: 12, color: Colors.green),
-                                ),
-                              ],
-                            ),
-                          ),
-                          Container(
-                            width: 60,
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.blue.withAlpha(77)),
-                            ),
-                            child: TextField(
-                              controller: _actualCountController,
-                              keyboardType: TextInputType.number,
-                              textInputAction: TextInputAction.done,
-                              onChanged: (value) => _updateActualCount(),
-                              onSubmitted: (_) => FocusScope.of(context).unfocus(),
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.white),
-                              textAlign: TextAlign.center,
-                              decoration: InputDecoration(
-                                filled: true,
-                                fillColor: Colors.transparent,
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-                                contentPadding: const EdgeInsets.symmetric(vertical: 8),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withAlpha(25),
-                              borderRadius: BorderRadius.circular(12),
-                              border: Border.all(color: Colors.orange.withAlpha(77)),
-                            ),
-                            child: Text(
-                              _stockCount?.toString() ?? '0',
-                              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
+                          const Spacer(),
                           SizedBox(
-                            width: 32,
-                            height: 32,
+                            width: 28, height: 28,
                             child: IconButton(
                               padding: EdgeInsets.zero,
                               onPressed: _closeProductPanel,
                               icon: const Icon(Icons.close, color: Colors.white54, size: 18),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _productName ?? '',
+                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withAlpha(25),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '₴ ${_productPrice?.toStringAsFixed(2) ?? ''}',
+                          style: const TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.w600),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () => _actualCountController.selection = TextSelection(
+                                baseOffset: 0,
+                                extentOffset: _actualCountController.text.length,
+                              ),
+                              child: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue.withAlpha(25),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(color: Colors.blue.withAlpha(77)),
+                                ),
+                                child: Column(
+                                  children: [
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        const Icon(Icons.edit_outlined, size: 14, color: Colors.blue),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          'Фактично',
+                                          style: TextStyle(fontSize: 12, color: Colors.blue.shade200, fontWeight: FontWeight.w600),
+                                        ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 4),
+                                    TextField(
+                                      controller: _actualCountController,
+                                      keyboardType: TextInputType.number,
+                                      textInputAction: TextInputAction.done,
+                                      onChanged: (value) => _updateActualCount(),
+                                      onSubmitted: (_) => FocusScope.of(context).unfocus(),
+                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                      textAlign: TextAlign.center,
+                                      decoration: InputDecoration(
+                                        filled: true,
+                                        fillColor: Colors.transparent,
+                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
+                                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.orange.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(color: Colors.orange.withAlpha(77)),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Залишок',
+                                    style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _stockCount?.toString() ?? '0',
+                                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: (_actualCount ?? 0) >= (_stockCount ?? 0)
+                                    ? Colors.green.withAlpha(25)
+                                    : Colors.red.withAlpha(25),
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: (_actualCount ?? 0) >= (_stockCount ?? 0)
+                                      ? Colors.green.withAlpha(77)
+                                      : Colors.red.withAlpha(77),
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  const Text(
+                                    'Різниця',
+                                    style: TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        (_actualCount ?? 0) > (_stockCount ?? 0)
+                                            ? Icons.arrow_upward
+                                            : (_actualCount ?? 0) < (_stockCount ?? 0)
+                                                ? Icons.arrow_downward
+                                                : Icons.remove,
+                                        size: 16,
+                                        color: (_actualCount ?? 0) > (_stockCount ?? 0)
+                                            ? Colors.green
+                                            : (_actualCount ?? 0) < (_stockCount ?? 0)
+                                                ? Colors.red
+                                                : Colors.grey,
+                                      ),
+                                      const SizedBox(width: 2),
+                                      Text(
+                                        _actualCount != null && _stockCount != null
+                                            ? (_actualCount! - _stockCount! >= 0
+                                                ? '+${_actualCount! - _stockCount!}'
+                                                : '${_actualCount! - _stockCount!}')
+                                            : '0',
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: (_actualCount ?? 0) > (_stockCount ?? 0)
+                                              ? Colors.green
+                                              : (_actualCount ?? 0) < (_stockCount ?? 0)
+                                                  ? Colors.red
+                                                  : Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ],
