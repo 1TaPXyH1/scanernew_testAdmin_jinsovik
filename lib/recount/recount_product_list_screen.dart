@@ -598,8 +598,17 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
               
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(
-                  content: Text('Товар "${product['name']}" видалено'),
-                  backgroundColor: Colors.red,
+                  content: Row(
+                    children: [
+                      const Icon(Icons.check_circle_outline, color: Color(0xFFFFDAD6), size: 20),
+                      const SizedBox(width: 10),
+                      Flexible(child: Text('Товар "${product['name']}" видалено', style: const TextStyle(color: Color(0xFFFFDAD6)))),
+                    ],
+                  ),
+                  backgroundColor: const Color(0xFF93000A),
+                  behavior: SnackBarBehavior.floating,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  duration: const Duration(seconds: 3),
                 ),
               );
             },

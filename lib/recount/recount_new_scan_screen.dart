@@ -530,8 +530,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               bottom: 48,
               child: TextButton.icon(
                 onPressed: _showManualEntry,
-                icon: const Icon(Icons.keyboard_outlined, color: Colors.white54, size: 20),
-                label: const Text('Ввести', style: TextStyle(color: Colors.white54, fontSize: 13)),
+                icon: const Icon(Icons.keyboard_outlined, color: Colors.white70, size: 22),
+                label: const Text('Ввести', style: TextStyle(color: Colors.white70, fontSize: 14)),
               ),
             ),
             if (_showProductPanel)
