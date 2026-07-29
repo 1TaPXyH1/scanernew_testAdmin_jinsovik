@@ -673,12 +673,11 @@ class _ScanOverlayClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final path = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final fullPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final centerX = size.width / 2;
     final boxLeft = centerX - boxSize / 2;
-    final boxRect = Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize);
-    path.addRect(boxRect);
-    return Path.combine(PathOperation.reverseDifference, path, Path()..addRect(boxRect));
+    final boxPath = Path()..addRect(Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize));
+    return Path.combine(PathOperation.difference, fullPath, boxPath);
   }
 
   @override
