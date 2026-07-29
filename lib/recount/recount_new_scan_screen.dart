@@ -72,7 +72,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+    _sessionManager = context.read<RecountSessionManager>();
   }
 
   @override
@@ -358,7 +358,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 final sid = _sessionManager.currentSessionId;
                 _sessionManager.clear();
                 if (sid != null) {
-                  Provider.of<SessionStorage>(context, listen: false).deleteSession(sid);
+                  context.read<SessionStorage>().deleteSession(sid);
                 }
                 Navigator.of(context).pop();
                 return;
@@ -397,7 +397,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                       onPressed: () async {
                         Navigator.pop(ctx);
                         final sessionId = _sessionManager.currentSessionId;
-                        final storage = Provider.of<SessionStorage>(context, listen: false);
+                        final storage = context.read<SessionStorage>();
                         final nav = Navigator.of(context);
                         _sessionManager.clear();
                         if (sessionId != null) {

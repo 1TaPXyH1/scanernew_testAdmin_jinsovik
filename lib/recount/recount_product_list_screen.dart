@@ -52,9 +52,8 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final products = Provider.of<RecountSessionManager>(context).products;
+    final products = context.watch<RecountSessionManager>().products;
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
@@ -334,7 +333,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                                   TextButton(
                                 onPressed: () async {
                                   Navigator.pop(ctx);
-                                  final manager = Provider.of<RecountSessionManager>(context, listen: false);
+                                  final manager = context.read<RecountSessionManager>();
                                   await manager.completeSession();
                                   if (!mounted) return;
                                   Navigator.of(context).pop('finish');
@@ -562,7 +561,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                       final newComment = commentController.text.trim();
                       actualCountController.dispose();
                       commentController.dispose();
-                      final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                      final sessionManager = context.read<RecountSessionManager>();
                       sessionManager.updateProduct(product['barcode'], newActualCount, newComment);
                       Navigator.pop(ctx);
                       setState(() {});
@@ -602,7 +601,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
           TextButton(
             onPressed: () {
               // Видаляємо товар з сесії
-              final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+              final sessionManager = context.read<RecountSessionManager>();
               sessionManager.removeProduct(product['barcode']);
               
               Navigator.pop(context);

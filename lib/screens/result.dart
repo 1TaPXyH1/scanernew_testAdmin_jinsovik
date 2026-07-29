@@ -189,7 +189,6 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text('Результат сканування'),

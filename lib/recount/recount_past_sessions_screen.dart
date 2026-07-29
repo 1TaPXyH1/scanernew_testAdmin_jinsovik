@@ -9,11 +9,10 @@ class RecountPastSessionsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final storage = Provider.of<SessionStorage>(context);
+    final storage = context.watch<SessionStorage>();
     final sessions = storage.pastSessions;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
@@ -143,7 +142,7 @@ class RecountPastSessionsScreen extends StatelessWidget {
                                     ),
                                   );
                                   if (confirm == true && context.mounted) {
-                                    await Provider.of<SessionStorage>(context, listen: false).deleteSession(session.id);
+                                    await context.read<SessionStorage>().deleteSession(session.id);
                                   }
                                 },
                               ),

@@ -10,11 +10,10 @@ class RecountMainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final storage = Provider.of<SessionStorage>(context);
-    final activeSession = storage.currentSession;
+    final storage = context.watch<SessionStorage>();
 
+    final activeSession = storage.currentSession;
     return Scaffold(
-      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
@@ -69,7 +68,7 @@ class RecountMainScreen extends StatelessWidget {
                     child: InkWell(
                       borderRadius: BorderRadius.circular(20),
                       onTap: () {
-                        final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                        final sessionManager = context.read<RecountSessionManager>();
                         sessionManager.loadSession(activeSession.id);
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -127,7 +126,7 @@ class RecountMainScreen extends StatelessWidget {
                   child: InkWell(
                     borderRadius: BorderRadius.circular(20),
                     onTap: () async {
-                      final sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+                      final sessionManager = context.read<RecountSessionManager>();
                       final sessionId = await sessionManager.startNewSession();
                       if (!context.mounted) return;
                       Navigator.of(context).push(
