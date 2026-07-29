@@ -132,6 +132,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     setState(() {
       _readyToScan = false;
       _isScanning = true;
+      _hasError = false;
     });
   }
 
@@ -150,8 +151,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       final imgCy = capture.size.height / 2;
       if ((cx - imgCx).abs() > zoneW || (cy - imgCy).abs() > zoneH) return;
     }
-
-    setState(() => _isScanning = false);
 
     try {
       if (await Vibration.hasVibrator()) {
@@ -451,9 +450,9 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         child: Stack(
           children: [
             MobileScanner(
-              controller: _controller,
-              onDetect: _onBarcodeDetected,
-              errorBuilder: (context, error) => Center(
+                controller: _controller,
+                onDetect: _onBarcodeDetected,
+                errorBuilder: (context, error) => Center(
                 child: Padding(
                   padding: const EdgeInsets.all(32),
                   child: Column(
