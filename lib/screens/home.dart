@@ -1,7 +1,7 @@
 ﻿import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import '../screens/scan.dart';
-import '../recount/recount_main_screen.dart';
+import '../recount.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});

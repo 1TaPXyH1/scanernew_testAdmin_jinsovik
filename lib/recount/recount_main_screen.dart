@@ -75,7 +75,7 @@ class RecountMainScreen extends StatelessWidget {
                           MaterialPageRoute(
                             builder: (context) => RecountNewScanScreen(
                               sessionId: activeSession.id,
-                              sessionNames: [activeSession.id],
+                              sessionIds: [activeSession.id],
                             ),
                           ),
                         );
@@ -134,7 +134,7 @@ class RecountMainScreen extends StatelessWidget {
                         MaterialPageRoute(
                           builder: (context) => RecountNewScanScreen(
                             sessionId: sessionId,
-                            sessionNames: [sessionId],
+                            sessionIds: [sessionId],
                           ),
                         ),
                       );

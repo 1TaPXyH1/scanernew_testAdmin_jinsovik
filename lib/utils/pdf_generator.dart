@@ -31,7 +31,7 @@ class PdfGenerator {
 
   static Future<File> generateRecountReport({
     required List<Map<String, dynamic>> products,
-    required List<String> sessionNames,
+    required List<String> sessionIds,
   }) async {
     final pdf = pw.Document();
 
@@ -80,7 +80,7 @@ class PdfGenerator {
                   ),
                   pw.SizedBox(height: 8),
                   pw.Text(
-                    'ID сесії: ${sessionNames.join(', ')}',
+                    'ID сесії: ${sessionIds.join(', ')}',
                     style: pw.TextStyle(
                       font: otoiwoFont,
                       fontSize: 14,

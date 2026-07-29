@@ -112,7 +112,7 @@ class _ScanScreenState extends State<ScanScreen>
     setState(() => _isScanning = false);
 
     final code = barcode.rawValue!;
-    final networkService = NetworkService();
+    final networkService = NetworkService.instance;
     final isConnected = await networkService.isConnected();
 
     if (!mounted) return;

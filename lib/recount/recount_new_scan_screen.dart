@@ -13,12 +13,12 @@ import 'recount_product_list_screen.dart';
 
 class RecountNewScanScreen extends StatefulWidget {
   final String sessionId;
-  final List<String> sessionNames;
+  final List<String> sessionIds;
 
   const RecountNewScanScreen({
     Key? key,
     required this.sessionId,
-    required this.sessionNames,
+    required this.sessionIds,
   }) : super(key: key);
 
   @override
@@ -165,7 +165,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   }
 
   Future<void> _processBarcode(String barcode) async {
-    final networkService = NetworkService();
+    final networkService = NetworkService.instance;
     final isConnected = await networkService.isConnected();
 
     if (!isConnected) {
@@ -232,7 +232,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             'price': _productPrice!,
             'stock_count': _stockCount!,
             'actual_count': 1,
-            'replace': false,
           });
         } else {
           _showError('Товар не знайдено в базі даних');
@@ -271,7 +270,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
         'price': _productPrice!,
         'stock_count': _stockCount!,
         'actual_count': newCount,
-        'replace': true,
       });
       setState(() => _actualCount = newCount);
     }
@@ -430,7 +428,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                     MaterialPageRoute(
                       builder: (context) => RecountProductListScreen(
                         products: products,
-                        sessionNames: widget.sessionNames,
+                        sessionIds: widget.sessionIds,
                       ),
                     ),
                   )

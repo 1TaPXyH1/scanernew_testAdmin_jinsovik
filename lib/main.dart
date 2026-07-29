@@ -2,7 +2,7 @@
 import 'screens/home.dart';
 import 'package:provider/provider.dart';
 import 'services/session_storage.dart';
-import 'recount/recount_session_manager.dart';
+import 'recount.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();

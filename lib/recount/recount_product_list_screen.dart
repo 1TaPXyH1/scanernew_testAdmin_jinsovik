@@ -7,12 +7,12 @@ import 'recount_session_manager.dart';
 
 class RecountProductListScreen extends StatefulWidget {
   final List<Map<String, dynamic>> products;
-  final List<String> sessionNames;
+  final List<String> sessionIds;
 
   const RecountProductListScreen({
     Key? key,
     required this.products,
-    required this.sessionNames,
+    required this.sessionIds,
   }) : super(key: key);
 
   @override
@@ -319,7 +319,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                       onPressed: () async {
                         final file = await PdfGenerator.generateRecountReport(
                           products: products,
-                          sessionNames: widget.sessionNames,
+                          sessionIds: widget.sessionIds,
                         );
                         if (!mounted) return;
                         showDialog(

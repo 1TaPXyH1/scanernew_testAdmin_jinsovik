@@ -115,7 +115,7 @@ class RecountPastSessionsScreen extends StatelessWidget {
                                 onPressed: () async {
                                   final file = await PdfGenerator.generateRecountReport(
                                     products: session.products,
-                                    sessionNames: [session.id],
+                                    sessionIds: [session.id],
                                   );
                                   if (!context.mounted) return;
                                   Printing.sharePdf(bytes: await file.readAsBytes(), filename: 'recount_${session.id}.pdf');
