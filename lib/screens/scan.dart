@@ -221,6 +221,40 @@ class _ScanScreenState extends State<ScanScreen>
             MobileScanner(
               controller: controller,
               onDetect: _onBarcodeDetected,
+              errorBuilder: (context, error) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const Icon(Icons.videocam_off_outlined, size: 64, color: Color(0xFFCF6679)),
+                      const SizedBox(height: 16),
+                      const Text(
+                        'Камера недоступна',
+                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Надайте дозвіл на камеру в налаштуваннях\nабо переконайтесь що вона не зайнята',
+                        style: TextStyle(color: Colors.white60, fontSize: 14),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 24),
+                      ElevatedButton.icon(
+                        onPressed: () => controller.start(),
+                        icon: const Icon(Icons.refresh, size: 20),
+                        label: const Text('Спробувати знову'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.orangeAccent,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
             ClipPath(
               clipper: _ScanOverlayClipper(boxTop: boxTop, boxSize: boxSize),
