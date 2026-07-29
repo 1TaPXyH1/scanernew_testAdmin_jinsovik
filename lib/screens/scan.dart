@@ -38,7 +38,7 @@ class _ScanScreenState extends State<ScanScreen>
       vsync: this,
       duration: const Duration(seconds: 2),
     )..repeat(reverse: true);
-    _borderAnimation = Tween<double>(begin: 2, end: 5).animate(
+    _borderAnimation = Tween<double>(begin: 3, end: 6).animate(
       CurvedAnimation(parent: _borderAnimationController, curve: Curves.easeInOut),
     );
   }
@@ -233,8 +233,8 @@ class _ScanScreenState extends State<ScanScreen>
                 child: AnimatedBuilder(
                   animation: _borderAnimation,
                   builder: (context, child) {
-                    final color = _hasError ? const Color(0xFFCF6679) : Colors.orangeAccent;
-                    final w = _hasError ? 3.0 : _borderAnimation.value;
+                    final color = _hasError ? Colors.redAccent : Colors.orangeAccent;
+                    final w = _hasError ? 4.0 : _borderAnimation.value;
                     return CustomPaint(
                       size: Size(boxSize, boxSize),
                       painter: _ScanCornersPainter(color: color, width: w, cornerSize: 30),
