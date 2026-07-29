@@ -63,7 +63,7 @@ class PdfGenerator {
             pw.Container(
               padding: const pw.EdgeInsets.all(20),
               decoration: const pw.BoxDecoration(
-                color: PdfColors.blue900,
+                color: PdfColors.grey800,
                 borderRadius: pw.BorderRadius.all(pw.Radius.circular(12)),
               ),
               child: pw.Column(
@@ -93,40 +93,6 @@ class PdfGenerator {
                       font: otoiwoFont,
                       fontSize: 14,
                       color: PdfColors.white,
-                    ),
-                  ),
-                  pw.SizedBox(height: 8),
-                  pw.Container(
-                    padding: const pw.EdgeInsets.all(12),
-                    decoration: pw.BoxDecoration(
-                      color: PdfColors.grey200,
-                      borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
-                      border: pw.Border.all(color: PdfColors.grey400),
-                    ),
-                    child: pw.Row(
-                      children: [
-                        pw.Text(
-                          'Відповідальний за переоблік: ',
-                          style: pw.TextStyle(
-                            font: otoiwoFont,
-                            fontSize: 12,
-                            color: PdfColors.white,
-                          ),
-                        ),
-                        pw.Expanded(
-                          child: pw.Container(
-                            height: 20,
-                            decoration: const pw.BoxDecoration(
-                              border: pw.Border(
-                                bottom: pw.BorderSide(
-                                  color: PdfColors.grey400,
-                                  width: 1,
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
                     ),
                   ),
                 ],
@@ -207,9 +173,10 @@ class PdfGenerator {
     // Add table header
     tableRows.add(
       pw.TableRow(
-        decoration: const pw.BoxDecoration(color: PdfColors.blue900),
+        decoration: const pw.BoxDecoration(color: PdfColors.grey800),
         children: [
-          _buildTableCell('Назва товару', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('Назва', font: boldFont, color: PdfColors.white, isHeader: true),
+          _buildTableCell('Штрихкод', font: boldFont, color: PdfColors.white, isHeader: true),
           _buildTableCell('Ціна', font: boldFont, color: PdfColors.white, isHeader: true),
           _buildTableCell('Залишок', font: boldFont, color: PdfColors.white, isHeader: true),
           _buildTableCell('По факту', font: boldFont, color: PdfColors.white, isHeader: true),
@@ -244,6 +211,7 @@ class PdfGenerator {
             pw.Container(),
             pw.Container(),
             pw.Container(),
+            pw.Container(),
           ],
         ),
       );
@@ -261,6 +229,7 @@ class PdfGenerator {
             ),
             children: [
               _buildTableCell(p['name']?.toString() ?? '', font: font),
+              _buildTableCell(p['barcode']?.toString() ?? '', font: font),
               _buildTableCell('${_toDouble(p['price']).toStringAsFixed(2)} грн', font: font),
               _buildTableCell(_toInt(p['stock_count']).toString(), font: font),
               _buildTableCell(_toInt(p['actual_count']).toString(), font: font),
@@ -281,10 +250,11 @@ class PdfGenerator {
         border: pw.TableBorder.all(color: PdfColors.grey400),
         columnWidths: const {
           0: pw.FlexColumnWidth(3),
-          1: pw.FlexColumnWidth(1),
+          1: pw.FlexColumnWidth(1.5),
           2: pw.FlexColumnWidth(1),
           3: pw.FlexColumnWidth(1),
           4: pw.FlexColumnWidth(1),
+          5: pw.FlexColumnWidth(1),
         },
         children: tableRows,
       ),
