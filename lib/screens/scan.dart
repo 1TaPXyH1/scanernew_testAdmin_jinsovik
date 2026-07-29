@@ -51,7 +51,7 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   void deactivate() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => controller.stop());
+    controller.stop();
     super.deactivate();
   }
 

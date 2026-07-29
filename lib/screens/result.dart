@@ -87,6 +87,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
             if (mounted && hasVibrator) {
               try { Vibration.vibrate(pattern: [0, 150, 100, 150]); } catch (_) {}
             }
+            if (!mounted) return;
 
             setState(() {
               productData = {
@@ -128,6 +129,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 try { Vibration.vibrate(pattern: [0, 150, 100, 150]); } catch (_) {}
               }
             }
+            if (!mounted) return;
 
             setState(() {
               if (results.length == 1) {
@@ -267,11 +269,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
                   const SizedBox(width: 12),
                 ],
                 ElevatedButton.icon(
-                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  onPressed: () => Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
                         builder: (_) =>
                             ScanScreen(selectedStore: widget.selectedStore)),
-                    (_) => false,
                   ),
                   icon: const Icon(Icons.qr_code_scanner, size: 20),
                   label: const Text('Сканувати ще'),
@@ -288,11 +289,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
               Padding(
                 padding: const EdgeInsets.only(top: 12),
                 child: TextButton.icon(
-                  onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+                  onPressed: () => Navigator.of(context).pushReplacement(
                     MaterialPageRoute(
                         builder: (_) =>
                             ScanScreen(selectedStore: widget.selectedStore)),
-                    (_) => false,
                   ),
                   icon: const Icon(Icons.keyboard_outlined, size: 18, color: Colors.white54),
                   label: const Text('Ввести інший штрихкод', style: TextStyle(color: Colors.white54)),
@@ -427,11 +427,10 @@ class _ResultsScreenState extends State<ResultsScreen> {
           const SizedBox(width: 12),
           Expanded(
             child: ElevatedButton.icon(
-              onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+              onPressed: () => Navigator.of(context).pushReplacement(
                 MaterialPageRoute(
                     builder: (_) =>
                         ScanScreen(selectedStore: widget.selectedStore)),
-                (_) => false,
               ),
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('Сканувати ще'),

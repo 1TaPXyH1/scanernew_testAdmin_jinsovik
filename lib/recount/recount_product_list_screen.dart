@@ -252,13 +252,19 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                '📊 ПІДСУМОК ПЕРЕОБЛІКУ',
-                style: TextStyle(
-                  color: Colors.white,
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                ),
+              const Row(
+                children: [
+                  Icon(Icons.bar_chart, color: Colors.white, size: 20),
+                  SizedBox(width: 8),
+                  Text(
+                    'ПІДСУМОК ПЕРЕОБЛІКУ',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
               const SizedBox(height: 12),
               Column(

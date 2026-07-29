@@ -83,14 +83,14 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   @override
   void deactivate() {
-    WidgetsBinding.instance.addPostFrameCallback((_) => _controller.stop());
+    _controller.stop();
     super.deactivate();
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    WidgetsBinding.instance.addPostFrameCallback((_) => _saveSession());
+    _saveSession();
     _borderAnimationController.dispose();
     _controller.stop();
     _controller.dispose();
@@ -216,6 +216,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           final newActualCount = currentActualCount + 1;
 
           setState(() {
+            _isScanning = false;
             _currentBarcode = barcode;
             _productName = productInfo['good'] ?? 'Невідомий товар';
             _productPrice = double.tryParse(productInfo['price']?.toString() ?? '0') ?? 0.0;
@@ -278,6 +279,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   void _closeProductPanel() {
     setState(() {
+      _isScanning = false;
       _showProductPanel = false;
       _currentBarcode = null;
       _productName = null;

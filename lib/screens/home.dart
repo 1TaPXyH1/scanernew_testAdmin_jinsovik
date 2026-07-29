@@ -93,13 +93,13 @@ class _HomeScreenState extends State<HomeScreen> {
           child: SafeArea(
             child: Column(
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
+                const Padding(
+                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
                   child: Row(
                     children: [
-                      const Icon(Icons.qr_code_scanner, color: Colors.white70, size: 22),
-                      const SizedBox(width: 8),
-                      const Text(
+                      Icon(Icons.qr_code_scanner, color: Colors.white70, size: 22),
+                      SizedBox(width: 8),
+                      Text(
                         'Jinsovik Сканер',
                         style: TextStyle(
                           color: Colors.white,
@@ -107,7 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      const Spacer(),
+                      Spacer(),
                     ],
                   ),
                 ),
