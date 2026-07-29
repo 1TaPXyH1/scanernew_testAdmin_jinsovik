@@ -201,21 +201,22 @@ class _ScanScreenState extends State<ScanScreen>
 
     return Scaffold(
       backgroundColor: Colors.black,
+      resizeToAvoidBottomInset: false,
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        automaticallyImplyLeading: false,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () => Navigator.of(context).pushAndRemoveUntil(
-              MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false,
-            ),
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () => Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (_) => const HomeScreen()), (route) => false,
           ),
-        ],
+        ),
       ),
       body: GestureDetector(
-        onTap: _readyToScan ? _startSingleScan : null,
+        onTap: () {
+          FocusScope.of(context).unfocus();
+          if (_readyToScan) _startSingleScan();
+        },
         child: Stack(
           children: [
             MobileScanner(
