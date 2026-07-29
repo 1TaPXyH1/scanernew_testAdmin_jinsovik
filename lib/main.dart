@@ -12,6 +12,13 @@ void main() async {
     debugPrint('Unhandled Flutter error: ${details.exception}');
   };
 
+  ErrorWidget.builder = (details) => Container(
+    color: const Color(0xFF121212),
+    child: const Center(
+      child: Text('...', style: TextStyle(color: Colors.white54)),
+    ),
+  );
+
   final storage = SessionStorage();
   await storage.load();
 
