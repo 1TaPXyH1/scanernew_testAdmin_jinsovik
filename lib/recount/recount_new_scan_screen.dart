@@ -50,7 +50,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   late AnimationController _borderAnimationController;
   late Animation<double> _borderAnimation;
 
-  late final RecountSessionManager _sessionManager;
+  late RecountSessionManager _sessionManager;
 
   @override
   void initState() {
@@ -72,7 +72,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sessionManager = context.read<RecountSessionManager>();
+    _sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
   }
 
   @override
