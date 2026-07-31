@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:printing/printing.dart';
@@ -74,7 +76,12 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
             end: Alignment.bottomCenter,
           ),
         ),
-        child: _buildGroupedProductList(products),
+        child: Column(
+          children: [
+            Expanded(child: _buildGroupedProductList(products)),
+            _buildActionPanel(products),
+          ],
+        ),
       ),
     );
   }
@@ -281,87 +288,167 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 12),
-        // Кнопки дій
-        Container(
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(16),
-            border: const Border.fromBorderSide(BorderSide(color: Colors.white12)),
-          ),
-          child: Column(
-            children: [
-              Row(
-                children: [
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.qr_code_scanner, size: 20),
-                      label: const Text('Сканувати далі'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFF30363B),
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () => Navigator.of(context).pop('scan_more'),
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: ElevatedButton.icon(
-                      icon: const Icon(Icons.picture_as_pdf, size: 20),
-                      label: const Text('Завершити'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.orangeAccent,
-                        foregroundColor: Colors.white,
-                        padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      onPressed: () async {
-                        final file = await PdfGenerator.generateRecountReport(
-                          products: products,
-                          sessionIds: widget.sessionIds,
-                        );
-                        if (!mounted) return;
-                        showDialog(
-                          context: context,
-                          barrierDismissible: false,
-                          builder: (ctx) => AlertDialog(
-                            backgroundColor: const Color(0xFF1E1E1E),
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                            title: const Text('PDF звіт створено', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                            content: const Text('Звіт успішно згенеровано. Ви можете поділитися ним через PDF.', style: TextStyle(color: Colors.white70)),
-                            actions: [
-                                  TextButton(
-                                onPressed: () async {
-                                  Navigator.pop(ctx);
-                                  final manager = context.read<RecountSessionManager>();
-                                  await manager.completeSession();
-                                  if (!mounted) return;
-                                  Navigator.of(context).pop('finish');
-                                },
-                                child: const Text('Готово', style: TextStyle(color: Colors.white60)),
-                              ),
-                              ElevatedButton(
-                                onPressed: () {
-                                  Printing.sharePdf(bytes: file.readAsBytesSync(), filename: 'recount_report.pdf');
-                                },
-                                style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
-                                child: const Text('Відкрити'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
+      ],
+    );
+  }
+
+  Widget _buildActionPanel(List<Map<String, dynamic>> products) {
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+        decoration: const BoxDecoration(
+          color: Color(0xFF161616),
+          border: Border(top: BorderSide(color: Colors.white12)),
+        ),
+        child: Row(
+          children: [
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.qr_code_scanner, size: 20),
+                label: const Text('Сканувати далі'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF30363B),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => Navigator.of(context).pop('scan_more'),
               ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: ElevatedButton.icon(
+                icon: const Icon(Icons.picture_as_pdf, size: 20),
+                label: const Text('Завершити'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.orangeAccent,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+                onPressed: () => _confirmCompletion(products),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _confirmCompletion(List<Map<String, dynamic>> products) {
+    showDialog(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Завершити переоблік?',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+          'Буде створено PDF-звіт, а сесію буде збережено в історії.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Скасувати',
+                style: TextStyle(color: Colors.white60)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              _completeRecount(products);
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            child: const Text('Створити PDF та завершити'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _completeRecount(List<Map<String, dynamic>> products) async {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Dialog(
+        backgroundColor: Color(0xFF1E1E1E),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.orangeAccent),
+              ),
+              SizedBox(width: 16),
+              Text('Створюємо PDF-звіт...',
+                  style: TextStyle(color: Colors.white)),
             ],
           ),
         ),
-      ],
+      ),
+    );
+
+    try {
+      final file = await PdfGenerator.generateRecountReport(
+        products: products,
+        sessionIds: widget.sessionIds,
+      );
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await context.read<RecountSessionManager>().completeSession();
+      if (!mounted) return;
+      _showPdfReadyDialog(file);
+    } catch (_) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Не вдалося створити PDF-звіт. Спробуйте ще раз.'),
+          backgroundColor: Color(0xFF93000A),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
+  }
+
+  void _showPdfReadyDialog(File file) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: const Text('PDF-звіт готовий',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        content: const Text(
+            'Надішліть звіт або завершіть переоблік.',
+            style: TextStyle(color: Colors.white70)),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Printing.sharePdf(
+                bytes: file.readAsBytesSync(),
+                filename: 'recount_report.pdf',
+              );
+            },
+            child: const Text('Надіслати PDF',
+                style: TextStyle(color: Colors.orangeAccent)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(dialogContext);
+              Navigator.of(context).pop('finish');
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            child: const Text('Готово'),
+          ),
+        ],
+      ),
     );
   }
 
@@ -590,7 +677,8 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        backgroundColor: const Color(0xFF424242),
+        backgroundColor: const Color(0xFF272727),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         title: const Text('Видалити товар?', style: TextStyle(color: Colors.white)),
         content: Text(
           'Ви впевнені, що хочете видалити "${product['name']}"?',
@@ -614,12 +702,12 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                 SnackBar(
                   content: Row(
                     children: [
-                      const Icon(Icons.check_circle_outline, color: Color(0xFFFFDAD6), size: 20),
+                      const Icon(Icons.check_circle_outline, color: Colors.greenAccent, size: 20),
                       const SizedBox(width: 10),
-                      Flexible(child: Text('Товар "${product['name']}" видалено', style: const TextStyle(color: Color(0xFFFFDAD6)))),
+                      Flexible(child: Text('Товар "${product['name']}" видалено', style: const TextStyle(color: Colors.white))),
                     ],
                   ),
-                  backgroundColor: const Color(0xFF93000A),
+                  backgroundColor: const Color(0xFF30363B),
                   behavior: SnackBarBehavior.floating,
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                   duration: const Duration(seconds: 3),
@@ -647,7 +735,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         Row(
           children: [
             Expanded(
-              child: _buildStatCard(Icons.inventory_2_outlined, 'Товарів', '$totalProducts', Colors.blue),
+              child: _buildStatCard(Icons.inventory_2_outlined, 'Товарів', '$totalProducts', Colors.white60),
             ),
             const SizedBox(width: 8),
             Expanded(

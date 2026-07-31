@@ -195,6 +195,14 @@ class _SessionCard extends StatelessWidget {
                   );
                   if (confirmed == true && context.mounted) {
                     await context.read<SessionStorage>().deleteSession(session.id);
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Сесію видалено'),
+                        backgroundColor: Color(0xFF30363B),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
                   }
                 },
               ),

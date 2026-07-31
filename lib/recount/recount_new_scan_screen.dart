@@ -234,10 +234,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           _showError('Товар не знайдено в базі даних');
         }
       } else {
-        _showError('Помилка сервера: ${response.statusCode}');
+        _showError('Сервер тимчасово недоступний. Спробуйте ще раз.');
       }
-    } catch (e) {
-      _showError('Помилка при отриманні інформації про товар: $e');
+    } catch (_) {
+      _showError('Не вдалося отримати інформацію про товар. Спробуйте ще раз.');
     }
   }
 
@@ -248,7 +248,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       _readyToScan = true;
       _isScanning = false;
     });
-    Future.delayed(const Duration(milliseconds: 1500), () {
+    Future.delayed(const Duration(milliseconds: 2500), () {
       if (mounted) {
         setState(() {
           _hasError = false;
@@ -401,66 +401,80 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             }
             showDialog(
               context: context,
-              builder: (ctx) => AlertDialog(
+              builder: (dialogContext) => Dialog(
                 backgroundColor: const Color(0xFF1E1E1E),
                 shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20)),
-                title: const Text('Відкласти переоблік?',
-                    style: TextStyle(
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 18)),
-                content: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        const Icon(Icons.inventory,
-                            size: 18, color: Colors.orangeAccent),
-                        const SizedBox(width: 6),
-                        Text('$count товарів',
-                            style: const TextStyle(
-                                color: Colors.white70, fontSize: 14)),
-                      ],
-                    ),
-                  ],
+                    borderRadius: BorderRadius.circular(24)),
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: Colors.orangeAccent.withAlpha(30),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.pause_circle_outline,
+                            color: Colors.orangeAccent, size: 28),
+                      ),
+                      const SizedBox(height: 16),
+                      const Text('Відкласти переоблік?',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700,
+                              fontSize: 20)),
+                      const SizedBox(height: 8),
+                      Text('$count товарів буде збережено у цій сесії.',
+                          textAlign: TextAlign.center,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 14)),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          onPressed: () async {
+                            Navigator.pop(dialogContext);
+                            final nav = Navigator.of(context);
+                            await _saveSession();
+                            nav.pop();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orangeAccent,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: const Text('Зберегти та вийти'),
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      SizedBox(
+                        width: double.infinity,
+                        child: TextButton(
+                          onPressed: () => Navigator.pop(dialogContext),
+                          child: const Text('Продовжити',
+                              style: TextStyle(color: Colors.white70)),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          Navigator.pop(dialogContext);
+                          final sessionId = _sessionManager.currentSessionId;
+                          final storage = context.read<SessionStorage>();
+                          final nav = Navigator.of(context);
+                          _sessionManager.clear();
+                          if (sessionId != null) {
+                            await storage.deleteSession(sessionId);
+                          }
+                          nav.pop();
+                        },
+                        child: const Text('Вийти без збереження',
+                            style: TextStyle(color: Colors.redAccent)),
+                      ),
+                    ],
+                  ),
                 ),
-                actions: [
-                  TextButton(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      final nav = Navigator.of(context);
-                      await _saveSession();
-                      nav.pop();
-                    },
-                    child: const Text('Зберегти та вийти',
-                        style: TextStyle(
-                            color: Colors.orangeAccent,
-                            fontWeight: FontWeight.w600)),
-                  ),
-                  const SizedBox(height: 4),
-                  TextButton(
-                    onPressed: () async {
-                      Navigator.pop(ctx);
-                      final sessionId = _sessionManager.currentSessionId;
-                      final storage = context.read<SessionStorage>();
-                      final nav = Navigator.of(context);
-                      _sessionManager.clear();
-                      if (sessionId != null) {
-                        await storage.deleteSession(sessionId);
-                      }
-                      nav.pop();
-                    },
-                    child: const Text('Не зберігати',
-                        style: TextStyle(color: Colors.redAccent)),
-                  ),
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text('Продовжити',
-                        style: TextStyle(color: Colors.white54)),
-                  ),
-                ],
               ),
             );
           },
