@@ -310,6 +310,8 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: const Color(0xFF30363B),
                   foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -324,6 +326,8 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.orangeAccent,
                   foregroundColor: Colors.white,
+                  elevation: 0,
+                  shadowColor: Colors.transparent,
                   padding: const EdgeInsets.symmetric(vertical: 14),
                   shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 ),
@@ -425,29 +429,43 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: const Text('PDF-звіт готовий',
             style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: const Text(
-            'Надішліть звіт або завершіть переоблік.',
-            style: TextStyle(color: Colors.white70)),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Printing.sharePdf(
-                bytes: file.readAsBytesSync(),
-                filename: 'recount_report.pdf',
-              );
-            },
-            child: const Text('Надіслати PDF',
-                style: TextStyle(color: Colors.orangeAccent)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(dialogContext);
-              Navigator.of(context).pop('finish');
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-            child: const Text('Готово'),
-          ),
-        ],
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const Text('Переоблік завершено. Надішліть PDF-звіт у зручний спосіб.',
+                style: TextStyle(color: Colors.white70)),
+            const SizedBox(height: 24),
+            ElevatedButton.icon(
+              onPressed: () {
+                Printing.sharePdf(
+                  bytes: file.readAsBytesSync(),
+                  filename: 'recount_report.pdf',
+                );
+              },
+              icon: const Icon(Icons.send_rounded),
+              label: const Text('Надіслати PDF'),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orangeAccent,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+            ),
+            const SizedBox(height: 8),
+            OutlinedButton(
+              onPressed: () {
+                Navigator.pop(dialogContext);
+                Navigator.of(context).pop('finish');
+              },
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white70,
+                side: const BorderSide(color: Colors.white24),
+                padding: const EdgeInsets.symmetric(vertical: 14),
+              ),
+              child: const Text('Готово'),
+            ),
+          ],
+        ),
       ),
     );
   }
