@@ -189,21 +189,31 @@ class _ResultsScreenState extends State<ResultsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFF121212),
       appBar: AppBar(
-        backgroundColor: Colors.black,
-        title: const Text('Результат сканування'),
+        backgroundColor: const Color(0xFF121212),
+        title: const Text('Товар відскановано'),
         elevation: 0,
         automaticallyImplyLeading: false,
       ),
-      body: isLoading
-          ? _buildLoading()
-          : _errorType != _ErrorType.none
-              ? _buildErrorScreen()
-              : productData == null
-                  ? _buildErrorScreen()
-                  : (productData?.containsKey('multiple') ?? false)
-                      ? _buildMultipleResults()
-                      : _buildSingleResult(),
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            colors: [Color(0xFF121212), Color(0xFF19232B)],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+          ),
+        ),
+        child: isLoading
+            ? _buildLoading()
+            : _errorType != _ErrorType.none
+                ? _buildErrorScreen()
+                : productData == null
+                    ? _buildErrorScreen()
+                    : (productData?.containsKey('multiple') ?? false)
+                        ? _buildMultipleResults()
+                        : _buildSingleResult(),
+      ),
     );
   }
 
@@ -213,11 +223,17 @@ class _ResultsScreenState extends State<ResultsScreen> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.qr_code_scanner, size: 60, color: Colors.orangeAccent),
-              SizedBox(height: 24),
-              SizedBox(width: 200, height: 24),
+              Icon(Icons.qr_code_scanner_rounded,
+                  size: 60, color: Colors.orangeAccent),
               SizedBox(height: 16),
-              SizedBox(width: 160, height: 16),
+              Text('Шукаємо товар...',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700)),
+              SizedBox(height: 6),
+              Text('Перевіряємо наявність у магазині',
+                  style: TextStyle(color: Colors.white60, fontSize: 14)),
             ],
           ),
         ),
@@ -304,15 +320,20 @@ class _ResultsScreenState extends State<ResultsScreen> {
   }
 
   Widget _buildSingleResult() => ListView(
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
         physics: const BouncingScrollPhysics(),
         children: [
+          _buildProductHero(),
+          const SizedBox(height: 12),
           _infoCard([
-            _infoRow(Icons.qr_code, 'Штрихкод', widget.barcode),
-            _infoRow(Icons.label, 'Назва', productData!['name']),
-            _infoRow(Icons.price_check, 'Ціна', '${productData!['price']} грн'),
-            _infoRow(Icons.store, 'Магазин', productData!['store']),
-            _infoRow(Icons.inventory, 'Залишок', '${productData!['remaining']} шт'),
+            const Text('Наявність у магазині',
+                style: TextStyle(
+                    color: Colors.white,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 14),
+            _infoRow(Icons.storefront_outlined, 'Магазин', productData!['store']),
+            _infoRow(Icons.inventory_2_outlined, 'Залишок', '${productData!['remaining']} шт'),
             if (productData!['size'] != null)
               _infoRow(Icons.straighten, 'Розмір', productData!['size']),
             if (productData!['telephone'] != null)
@@ -325,14 +346,13 @@ class _ResultsScreenState extends State<ResultsScreen> {
 
   Widget _buildMultipleResults() => Column(
         children: [
-          _infoCard([
-            _infoRow(Icons.label, 'Назва', productData!['name']),
-            _infoRow(Icons.qr_code, 'Штрихкод', productData!['barcode']),
-            _infoRow(Icons.price_check, 'Ціна', '${productData!['price']} грн'),
-          ]),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+            child: _buildProductHero(),
+          ),
           Expanded(
             child: ListView.builder(
-              padding: const EdgeInsets.all(20),
+              padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
               physics: const BouncingScrollPhysics(),
               itemCount: productData!['multiple'].length,
               itemBuilder: (_, i) {
@@ -340,8 +360,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 20),
                   child: _infoCard([
-                    _infoRow(Icons.store, 'Магазин', store['store']),
-                    _infoRow(Icons.inventory, 'Залишок', '${store['remaining']} шт'),
+                    _infoRow(Icons.storefront_outlined, 'Магазин', store['store']),
+                    _infoRow(Icons.inventory_2_outlined, 'Залишок', '${store['remaining']} шт'),
                     if (store['size'] != null)
                       _infoRow(Icons.straighten, 'Розмір', store['size']),
                     if (store['telephone'] != null)
@@ -358,17 +378,75 @@ class _ResultsScreenState extends State<ResultsScreen> {
         ],
       );
 
-  Widget _infoRow(IconData icon, String label, String value) => Row(
+  Widget _buildProductHero() => Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.orangeAccent.withAlpha(90)),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: BoxDecoration(
+                    color: Colors.greenAccent.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(Icons.check_circle_rounded,
+                      color: Colors.greenAccent),
+                ),
+                const SizedBox(width: 12),
+                const Expanded(
+                  child: Text('Товар знайдено',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700)),
+                ),
+                Text('${productData!['price']} грн',
+                    style: const TextStyle(
+                        color: Colors.orangeAccent,
+                        fontSize: 17,
+                        fontWeight: FontWeight.w700)),
+              ],
+            ),
+            const SizedBox(height: 16),
+            Text(productData!['name'],
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 19,
+                    fontWeight: FontWeight.w700)),
+            const SizedBox(height: 8),
+            Row(
+              children: [
+                const Icon(Icons.qr_code, size: 16, color: Colors.white38),
+                const SizedBox(width: 6),
+                Text(widget.barcode,
+                    style: const TextStyle(color: Colors.white54, fontSize: 13)),
+              ],
+            ),
+          ],
+        ),
+      );
+
+  Widget _infoRow(IconData icon, String label, String value) => Padding(
+        padding: const EdgeInsets.only(bottom: 14),
+        child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            padding: const EdgeInsets.all(6),
-            margin: const EdgeInsets.only(top: 4),
+            padding: const EdgeInsets.all(8),
             decoration: BoxDecoration(
               color: Colors.white12,
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(icon, size: 20, color: Colors.orangeAccent),
+            child: Icon(icon, size: 19, color: Colors.orangeAccent),
           ),
           const SizedBox(width: 12),
           Expanded(
@@ -390,14 +468,15 @@ class _ResultsScreenState extends State<ResultsScreen> {
             ),
           ),
         ],
-      );
+      ));
 
   Widget _infoCard(List<Widget> children) => Container(
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white12,
-          borderRadius: BorderRadius.circular(16),
+          color: const Color(0xFF1E1E1E),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: Colors.white12),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -416,7 +495,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               icon: const Icon(Icons.home),
               label: const Text('На головну'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blueGrey.shade700,
+                backgroundColor: const Color(0xFF30363B),
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
@@ -434,7 +513,7 @@ class _ResultsScreenState extends State<ResultsScreen> {
               icon: const Icon(Icons.qr_code_scanner),
               label: const Text('Сканувати ще'),
               style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.lightBlue.shade700,
+                backgroundColor: Colors.orangeAccent,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
