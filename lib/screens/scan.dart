@@ -205,8 +205,9 @@ class _ScanScreenState extends State<ScanScreen>
       backgroundColor: Colors.black,
       resizeToAvoidBottomInset: false,
       appBar: AppBar(
-        backgroundColor: Colors.transparent,
+        backgroundColor: const Color(0xFF121212),
         elevation: 0,
+        title: const Text('Сканування'),
         leading: IconButton(
           icon: const Icon(Icons.close, color: Colors.white),
           onPressed: () => Navigator.of(context).pushAndRemoveUntil(
@@ -289,8 +290,15 @@ class _ScanScreenState extends State<ScanScreen>
                   child: Container(
                     padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(color: Colors.black54, borderRadius: BorderRadius.circular(30)),
-                    child: const Text('Натисніть на екран для сканування',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600), textAlign: TextAlign.center),
+                    child: const Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.touch_app_outlined, size: 17, color: Colors.orangeAccent),
+                        SizedBox(width: 8),
+                        Text('Торкніться екрана, щоб сканувати',
+                          style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -307,7 +315,7 @@ class _ScanScreenState extends State<ScanScreen>
                       children: [
                         SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
                         SizedBox(width: 10),
-                        Text('Сканування...', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                        Text('Шукаємо штрихкод...', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
@@ -337,20 +345,43 @@ class _ScanScreenState extends State<ScanScreen>
                 ),
               ),
             Positioned(
-              left: 24, bottom: 48,
-              child: FloatingActionButton(
-                onPressed: _toggleTorch,
-                tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
-                backgroundColor: _torchOn ? Colors.orangeAccent : Colors.grey,
-                child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
-              ),
-            ),
-            Positioned(
-              right: 24, bottom: 48,
-              child: TextButton.icon(
-                onPressed: _showManualEntry,
-                icon: const Icon(Icons.keyboard_outlined, color: Colors.white70, size: 22),
-                label: const Text('Ввести', style: TextStyle(color: Colors.white70, fontSize: 14)),
+              left: 24,
+              right: 24,
+              bottom: 24,
+              child: SafeArea(
+                top: false,
+                child: Container(
+                  height: 56,
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  decoration: BoxDecoration(
+                    color: const Color(0xE61E1E1E),
+                    borderRadius: BorderRadius.circular(18),
+                    border: Border.all(color: Colors.white24),
+                  ),
+                  child: Row(
+                    children: [
+                      IconButton(
+                        onPressed: _toggleTorch,
+                        tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
+                        icon: Icon(_torchOn ? Icons.flash_on_rounded : Icons.flash_off_rounded),
+                        color: _torchOn ? Colors.orangeAccent : Colors.white70,
+                      ),
+                      const SizedBox(
+                        height: 28,
+                        child: VerticalDivider(color: Colors.white24),
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: TextButton.icon(
+                          onPressed: _showManualEntry,
+                          icon: const Icon(Icons.keyboard_outlined, size: 20),
+                          label: const Text('Ввести вручну'),
+                          style: TextButton.styleFrom(foregroundColor: Colors.white70),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ),
             ),
           ],
