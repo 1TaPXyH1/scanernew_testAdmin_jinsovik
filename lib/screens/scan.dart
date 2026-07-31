@@ -3,6 +3,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../services/network_service.dart';
 import '../screens/home.dart';
 import '../screens/result.dart';
+import '../utils/scan_window.dart';
 
 class ScanScreen extends StatefulWidget {
   final String selectedStore;
@@ -98,16 +99,6 @@ class _ScanScreenState extends State<ScanScreen>
 
     final barcode = capture.barcodes.first;
     if (barcode.rawValue == null || barcode.rawValue!.isEmpty) return;
-
-    if (barcode.corners.isNotEmpty && capture.size != Size.zero) {
-      final cx = barcode.corners.map((o) => o.dx).reduce((a, b) => a + b) / barcode.corners.length;
-      final cy = barcode.corners.map((o) => o.dy).reduce((a, b) => a + b) / barcode.corners.length;
-      final zoneW = capture.size.width * 0.4;
-      final zoneH = capture.size.height * 0.4;
-      final imgCx = capture.size.width / 2;
-      final imgCy = capture.size.height / 2;
-      if ((cx - imgCx).abs() > zoneW || (cy - imgCy).abs() > zoneH) return;
-    }
 
     setState(() => _isScanning = false);
 
@@ -206,9 +197,9 @@ class _ScanScreenState extends State<ScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final boxSize = screenSize.width * 0.72;
-    final boxTop = screenSize.height * 0.1;
+    final scanWindow = ScanWindow.forPreview(MediaQuery.of(context).size);
+    final boxSize = scanWindow.width;
+    final boxTop = scanWindow.top;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -232,6 +223,7 @@ class _ScanScreenState extends State<ScanScreen>
           children: [
             MobileScanner(
               controller: controller,
+              scanWindow: scanWindow,
               onDetect: _onBarcodeDetected,
               errorBuilder: (context, error) => Center(
                 child: Padding(

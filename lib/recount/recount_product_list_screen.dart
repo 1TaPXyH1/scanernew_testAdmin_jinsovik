@@ -55,7 +55,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     final products = context.watch<RecountSessionManager>().products;
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.black,
+        backgroundColor: const Color(0xFF121212),
         title: const Text(
           'Список товарів',
           style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
@@ -69,7 +69,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
       body: Container(
         decoration: const BoxDecoration(
           gradient: LinearGradient(
-            colors: [Color(0xFF121212), Colors.blueGrey],
+            colors: [Color(0xFF121212), Color(0xFF19232B)],
             begin: Alignment.topCenter,
             end: Alignment.bottomCenter,
           ),
@@ -83,7 +83,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     final groupedProducts = _groupProductsByGender(products);
     
     return ListView(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       children: [
         // Простий список карток замість таблиці
         ...groupedProducts.entries.expand((entry) {
@@ -95,22 +95,20 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
           widgets.add(
             Container(
               margin: const EdgeInsets.only(bottom: 12),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: entry.key == 'Жіночий товар' 
-                      ? [Colors.pink.shade600, Colors.pink.shade700]
-                      : [Colors.blue.shade600, Colors.blue.shade700],
-                  begin: Alignment.centerLeft,
-                  end: Alignment.centerRight,
+                color: const Color(0xFF1E1E1E),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: (entry.key == 'Жіночий товар' ? Colors.pinkAccent : Colors.lightBlueAccent)
+                      .withAlpha(70),
                 ),
-                borderRadius: BorderRadius.circular(12),
               ),
               child: Row(
                 children: [
                   Icon(
                     entry.key == 'Жіночий товар' ? Icons.female : Icons.male,
-                    color: Colors.white,
+                    color: entry.key == 'Жіночий товар' ? Colors.pinkAccent : Colors.lightBlueAccent,
                     size: 20,
                   ),
                   const SizedBox(width: 8),
@@ -135,8 +133,13 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
               Card(
                 margin: const EdgeInsets.only(bottom: 8),
                 color: const Color(0xFF1E1E1E),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16),
+                  side: const BorderSide(color: Colors.white12),
+                ),
                 child: Padding(
-                  padding: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(18),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -145,9 +148,11 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                         product['name']?.toString() ?? '',
                         style: const TextStyle(
                           color: Colors.white,
-                          fontSize: 16,
-                          fontWeight: FontWeight.bold,
+                          fontSize: 17,
+                          fontWeight: FontWeight.w700,
                         ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
                       ),
                       Row(
                         children: [
@@ -178,7 +183,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                             child: _buildInfoChip(
                               'Ціна', 
                               '${_toDouble(product['price']).toStringAsFixed(0)}₴',
-                              Colors.orange,
+                              Colors.white70,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -186,7 +191,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                             child: _buildInfoChip(
                               'Залишок', 
                               _toInt(product['stock_count']).toString(),
-                              Colors.green,
+                              Colors.orangeAccent,
                             ),
                           ),
                         ],
@@ -198,7 +203,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                             child: _buildInfoChip(
                               'По факту', 
                               _toInt(product['actual_count']).toString(),
-                              Colors.blue,
+                              Colors.blueAccent,
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -206,7 +211,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                             child: _buildInfoChip(
                               'Різниця', 
                               diff == 0 ? '=' : diff.toString(),
-                              diff == 0 ? Colors.grey : (diff > 0 ? Colors.green : Colors.red),
+                              diff == 0 ? Colors.white54 : (diff > 0 ? Colors.greenAccent : Colors.redAccent),
                             ),
                           ),
                         ],
@@ -218,13 +223,13 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                         children: [
                           TextButton.icon(
                             onPressed: () => _editProduct(product),
-                            icon: const Icon(Icons.edit, color: Colors.blue, size: 16),
-                            label: const Text('Редагувати', style: TextStyle(color: Colors.blue)),
+                            icon: const Icon(Icons.edit_outlined, color: Colors.blueAccent, size: 16),
+                            label: const Text('Редагувати', style: TextStyle(color: Colors.blueAccent)),
                           ),
                           TextButton.icon(
                             onPressed: () => _deleteProduct(product),
-                            icon: const Icon(Icons.delete, color: Colors.red, size: 16),
-                            label: const Text('Видалити', style: TextStyle(color: Colors.red)),
+                            icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 16),
+                            label: const Text('Видалити', style: TextStyle(color: Colors.redAccent)),
                           ),
                         ],
                       ),
@@ -241,12 +246,11 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
       const SizedBox(height: 16),
         // Підсумок переобліку
         Container(
-          margin: const EdgeInsets.symmetric(horizontal: 12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade700, width: 1),
+            borderRadius: BorderRadius.circular(16),
+            border: const Border.fromBorderSide(BorderSide(color: Colors.white12)),
           ),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -256,7 +260,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                   Icon(Icons.bar_chart, color: Colors.white, size: 20),
                   SizedBox(width: 8),
                   Text(
-                    'ПІДСУМОК ПЕРЕОБЛІКУ',
+                    'Підсумок переобліку',
                     style: TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -280,12 +284,11 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         const SizedBox(height: 12),
         // Кнопки дій
         Container(
-          margin: const EdgeInsets.all(12),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: const Color(0xFF1E1E1E),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.grey.shade700, width: 1),
+            borderRadius: BorderRadius.circular(16),
+            border: const Border.fromBorderSide(BorderSide(color: Colors.white12)),
           ),
           child: Column(
             children: [
@@ -296,10 +299,10 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                       icon: const Icon(Icons.qr_code_scanner, size: 20),
                       label: const Text('Сканувати далі'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.blueAccent,
+                        backgroundColor: const Color(0xFF30363B),
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () => Navigator.of(context).pop('scan_more'),
                     ),
@@ -310,10 +313,10 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
                       icon: const Icon(Icons.picture_as_pdf, size: 20),
                       label: const Text('Завершити'),
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.green.shade600,
+                        backgroundColor: Colors.orangeAccent,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 12),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       onPressed: () async {
                         final file = await PdfGenerator.generateRecountReport(
@@ -367,7 +370,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
       decoration: BoxDecoration(
         color: color.withAlpha(25),
-        borderRadius: BorderRadius.circular(8),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withAlpha(77), width: 1),
       ),
       child: Column(

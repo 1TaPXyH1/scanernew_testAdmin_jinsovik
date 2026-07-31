@@ -8,6 +8,7 @@ import 'package:vibration/vibration.dart';
 import '../services/network_service.dart';
 import '../services/api_config.dart';
 import '../services/session_storage.dart';
+import '../utils/scan_window.dart';
 import 'recount_session_manager.dart';
 import 'recount_product_list_screen.dart';
 
@@ -141,18 +142,6 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
     final barcode = capture.barcodes.first;
     if (barcode.rawValue == null || barcode.rawValue!.isEmpty) return;
-
-    if (barcode.corners.isNotEmpty && capture.size != Size.zero) {
-      final cx = barcode.corners.map((o) => o.dx).reduce((a, b) => a + b) /
-          barcode.corners.length;
-      final cy = barcode.corners.map((o) => o.dy).reduce((a, b) => a + b) /
-          barcode.corners.length;
-      final zoneW = capture.size.width * 0.4;
-      final zoneH = capture.size.height * 0.4;
-      final imgCx = capture.size.width / 2;
-      final imgCy = capture.size.height / 2;
-      if ((cx - imgCx).abs() > zoneW || (cy - imgCy).abs() > zoneH) return;
-    }
 
     setState(() => _isScanning = false);
 
@@ -387,10 +376,9 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenWidth = MediaQuery.of(context).size.width;
-    final screenHeight = MediaQuery.of(context).size.height;
-    final boxSize = screenWidth * 0.72;
-    final boxTop = screenHeight * 0.1;
+    final scanWindow = ScanWindow.forPreview(MediaQuery.of(context).size);
+    final boxSize = scanWindow.width;
+    final boxTop = scanWindow.top;
 
     return Scaffold(
       backgroundColor: Colors.black,
@@ -513,6 +501,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
           children: [
             MobileScanner(
               controller: _controller,
+              scanWindow: scanWindow,
               onDetect: _onBarcodeDetected,
               errorBuilder: (context, error) => Center(
                 child: Padding(
