@@ -40,38 +40,83 @@ class _HomeScreenState extends State<HomeScreen> {
   void _showStorePicker() {
     showModalBottomSheet(
       context: context,
-      backgroundColor: Colors.black87,
+      backgroundColor: const Color(0xFF1E1E1E),
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (_) {
-        return ListView.builder(
-          shrinkWrap: true,
-          itemCount: stores.length,
-          itemBuilder: (context, index) {
-            final store = stores[index];
-            final isSelected = store == selectedStore;
-            return ListTile(
-              leading: Icon(
-                isSelected ? Icons.check_circle : Icons.storefront,
-                color: isSelected ? Colors.orangeAccent : Colors.white54,
-              ),
-              title: Text(
-                store,
-                style: TextStyle(
-                  color: isSelected ? Colors.orangeAccent : Colors.white70,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  fontSize: 18,
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.white24,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
                 ),
-              ),
-              onTap: () {
-                setState(() {
-                  selectedStore = store;
-                });
-                Navigator.pop(context);
-              },
-            );
-          },
+                const SizedBox(height: 20),
+                const Text('Оберіть магазин',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w700)),
+                const SizedBox(height: 12),
+                ...stores.map((store) {
+                  final isSelected = store == selectedStore;
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 8),
+                    child: Material(
+                      color: isSelected
+                          ? Colors.orangeAccent.withAlpha(24)
+                          : const Color(0xFF252525),
+                      borderRadius: BorderRadius.circular(16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(16),
+                        onTap: () {
+                          setState(() => selectedStore = store);
+                          Navigator.pop(context);
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Row(
+                            children: [
+                              Icon(
+                                isSelected
+                                    ? Icons.check_circle_rounded
+                                    : Icons.storefront_outlined,
+                                color: isSelected
+                                    ? Colors.orangeAccent
+                                    : Colors.white54,
+                              ),
+                              const SizedBox(width: 12),
+                              Text(store,
+                                  style: TextStyle(
+                                      color: isSelected
+                                          ? Colors.white
+                                          : Colors.white70,
+                                      fontSize: 16,
+                                      fontWeight: isSelected
+                                          ? FontWeight.w700
+                                          : FontWeight.w500)),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
         );
       },
     );
@@ -82,159 +127,202 @@ class _HomeScreenState extends State<HomeScreen> {
     return PopScope(
       canPop: true,
       child: Scaffold(
+        backgroundColor: const Color(0xFF121212),
         body: Container(
-          decoration: BoxDecoration(
+          decoration: const BoxDecoration(
             gradient: LinearGradient(
-              colors: [Colors.black, Colors.blueGrey.shade900],
+              colors: [Color(0xFF121212), Color(0xFF19232B)],
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
             ),
           ),
           child: SafeArea(
-            child: Column(
-              children: [
-                const Padding(
-                  padding: EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: Row(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Row(
                     children: [
-                      Icon(Icons.qr_code_scanner, color: Colors.white70, size: 22),
-                      SizedBox(width: 8),
-                      Text(
-                        'Jinsovik Сканер',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Spacer(),
+                      Icon(Icons.qr_code_scanner_rounded,
+                          color: Colors.orangeAccent, size: 24),
+                      SizedBox(width: 10),
+                      Text('Jinsovik Сканер',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 19,
+                              fontWeight: FontWeight.w700)),
                     ],
                   ),
-                ),
-                const Spacer(flex: 2),
-                Container(
-                  decoration: BoxDecoration(
-                    color: Colors.orangeAccent.withAlpha(25),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.orangeAccent.withAlpha(63)),
-                  ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(16),
-                    onTap: _showStorePicker,
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                      child: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Icon(Icons.storefront, color: Colors.orangeAccent.shade200, size: 20),
-                          const SizedBox(width: 10),
-                          Text(
-                            selectedStore,
-                            style: TextStyle(color: Colors.orangeAccent.shade200, fontSize: 17, fontWeight: FontWeight.w600),
-                          ),
-                          const SizedBox(width: 6),
-                          Icon(Icons.expand_more, color: Colors.orangeAccent.shade200.withAlpha(179), size: 22),
-                        ],
+                  const Spacer(),
+                  const Text('Сканер товарів',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 30,
+                          fontWeight: FontWeight.w700)),
+                  const SizedBox(height: 8),
+                  const Text('Оберіть магазин і почніть сканування.',
+                      style: TextStyle(color: Colors.white60, fontSize: 15)),
+                  const SizedBox(height: 28),
+                  const Text('ОБРАНИЙ МАГАЗИН',
+                      style: TextStyle(
+                          color: Colors.white54,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.8)),
+                  const SizedBox(height: 8),
+                  Material(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(18),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(18),
+                      onTap: _showStorePicker,
+                      child: Container(
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(18),
+                          border: Border.all(color: Colors.orangeAccent.withAlpha(80)),
+                        ),
+                        child: Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: Colors.orangeAccent.withAlpha(28),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.storefront_outlined,
+                                  color: Colors.orangeAccent),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(selectedStore,
+                                  style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 17,
+                                      fontWeight: FontWeight.w700)),
+                            ),
+                            const Icon(Icons.expand_more,
+                                color: Colors.white54),
+                          ],
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: 200,
-                  height: 200,
-                  child: ElevatedButton(
-                    onPressed: () {
+                  const SizedBox(height: 16),
+                  _HomeActionCard(
+                    icon: Icons.qr_code_scanner_rounded,
+                    title: 'Сканувати товар',
+                    description: 'Перевірити ціну та наявність',
+                    accent: Colors.orangeAccent,
+                    onTap: () {
                       Navigator.of(context).push(
                         PageRouteBuilder(
-                          pageBuilder: (context, animation, secondaryAnimation) =>
+                          pageBuilder: (_, __, ___) =>
                               ScanScreen(selectedStore: selectedStore),
-                          transitionsBuilder:
-                              (context, animation, secondaryAnimation, child) {
-                            return SlideTransition(
-                              position: Tween<Offset>(
-                                begin: const Offset(0.0, 1.0),
-                                end: Offset.zero,
-                              ).animate(animation),
-                              child: FadeTransition(
-                                opacity: animation,
-                                child: child,
-                              ),
-                            );
-                          },
+                          transitionsBuilder: (_, animation, __, child) =>
+                              SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 1),
+                              end: Offset.zero,
+                            ).animate(animation),
+                            child: FadeTransition(opacity: animation, child: child),
+                          ),
                           transitionDuration: const Duration(milliseconds: 300),
                         ),
                       );
                     },
-                    style: ElevatedButton.styleFrom(
-                      shape: const CircleBorder(),
-                      backgroundColor: Colors.orangeAccent,
-                      shadowColor: Colors.orangeAccent.withAlpha(128),
-                      elevation: 12,
-                    ),
-                    child: const Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.camera_alt_outlined, size: 48, color: Colors.white),
-                        SizedBox(height: 8),
-                        Text(
-                          'СКАНУВАТИ',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
-                    ),
                   ),
-                ),
-                const SizedBox(height: 48),
-                SizedBox(
-                  width: 220,
-                  child: OutlinedButton.icon(
-                    onPressed: () {
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (context) => const RecountMainScreen(),
-                        ),
-                      );
-                    },
-                    icon: const Icon(Icons.bar_chart_rounded, size: 20, color: Colors.white70),
-                    label: const Text(
-                      'Переоблік товарів',
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        fontWeight: FontWeight.w500,
+                  const SizedBox(height: 12),
+                  _HomeActionCard(
+                    icon: Icons.inventory_2_outlined,
+                    title: 'Переоблік товарів',
+                    description: 'Порахувати та створити PDF-звіт',
+                    accent: Colors.blueGrey.shade200,
+                    onTap: () => Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => const RecountMainScreen(),
                       ),
                     ),
-                    style: OutlinedButton.styleFrom(
-                      side: const BorderSide(color: Colors.white24),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(24),
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 24),
-                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                const SizedBox(height: 48),
-                Text(
-                  _appVersion,
-                  style: const TextStyle(
-                    fontSize: 13,
-                    color: Colors.white54,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                const Spacer(flex: 1),
-              ],
+                  const Spacer(),
+                  Text(_appVersion,
+                      textAlign: TextAlign.center,
+                      style: const TextStyle(
+                          fontSize: 13,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w500)),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
+}
+
+class _HomeActionCard extends StatelessWidget {
+  const _HomeActionCard({
+    required this.icon,
+    required this.title,
+    required this.description,
+    required this.accent,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String description;
+  final Color accent;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => Material(
+        color: const Color(0xFF1E1E1E),
+        borderRadius: BorderRadius.circular(20),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: accent.withAlpha(75)),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: accent.withAlpha(30),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, color: accent, size: 28),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title,
+                          style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700)),
+                      const SizedBox(height: 4),
+                      Text(description,
+                          style: const TextStyle(
+                              color: Colors.white60, fontSize: 14)),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_ios_rounded, color: accent, size: 18),
+              ],
+            ),
+          ),
+        ),
+      );
 }
