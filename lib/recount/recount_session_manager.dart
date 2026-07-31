@@ -48,6 +48,14 @@ class RecountSessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
+  void recordScan(Map<String, dynamic> product) {
+    addOrUpdateProduct(product);
+  }
+
+  void setActualCount(Map<String, dynamic> product) {
+    addOrUpdateProduct(product, replace: true);
+  }
+
   void updateProduct(String barcode, int newActualCount, String newComment) {
     final idx = _products.indexWhere((p) => p['barcode'] == barcode);
     if (idx >= 0) {

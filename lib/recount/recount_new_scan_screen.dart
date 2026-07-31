@@ -72,7 +72,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _sessionManager = Provider.of<RecountSessionManager>(context, listen: false);
+    _sessionManager =
+        Provider.of<RecountSessionManager>(context, listen: false);
   }
 
   @override
@@ -142,8 +143,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     if (barcode.rawValue == null || barcode.rawValue!.isEmpty) return;
 
     if (barcode.corners.isNotEmpty && capture.size != Size.zero) {
-      final cx = barcode.corners.map((o) => o.dx).reduce((a, b) => a + b) / barcode.corners.length;
-      final cy = barcode.corners.map((o) => o.dy).reduce((a, b) => a + b) / barcode.corners.length;
+      final cx = barcode.corners.map((o) => o.dx).reduce((a, b) => a + b) /
+          barcode.corners.length;
+      final cy = barcode.corners.map((o) => o.dy).reduce((a, b) => a + b) /
+          barcode.corners.length;
       final zoneW = capture.size.width * 0.4;
       final zoneH = capture.size.height * 0.4;
       final imgCx = capture.size.width / 2;
@@ -155,7 +158,9 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
 
     try {
       if (await Vibration.hasVibrator()) {
-        try { Vibration.vibrate(duration: 100); } catch (_) {}
+        try {
+          Vibration.vibrate(duration: 100);
+        } catch (_) {}
       }
       await _processBarcode(barcode.rawValue!);
       if (!mounted) return;
@@ -179,9 +184,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
     }
 
     try {
-      final response = await http.get(Uri.parse(
-        ApiConfig.productUrl(barcode),
-      )).timeout(const Duration(seconds: 10));
+      final response = await http
+          .get(Uri.parse(
+            ApiConfig.productUrl(barcode),
+          ))
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
@@ -219,14 +226,15 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             _isScanning = false;
             _currentBarcode = barcode;
             _productName = productInfo['good'] ?? 'Невідомий товар';
-            _productPrice = double.tryParse(productInfo['price']?.toString() ?? '0') ?? 0.0;
+            _productPrice =
+                double.tryParse(productInfo['price']?.toString() ?? '0') ?? 0.0;
             _stockCount = int.tryParse(storeData['remaining'].toString()) ?? 0;
             _actualCount = newActualCount;
             _actualCountController.text = _actualCount.toString();
             _showProductPanel = true;
           });
 
-          _sessionManager.addOrUpdateProduct({
+          _sessionManager.recordScan({
             'barcode': barcode,
             'name': _productName!,
             'price': _productPrice!,
@@ -264,7 +272,7 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
   void _updateActualCount() {
     final newCount = int.tryParse(_actualCountController.text) ?? 0;
     if (_currentBarcode != null) {
-      _sessionManager.addOrUpdateProduct({
+      _sessionManager.setActualCount({
         'barcode': _currentBarcode!,
         'name': _productName!,
         'price': _productPrice!,
@@ -300,7 +308,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       builder: (ctx) => AlertDialog(
         backgroundColor: const Color(0xFF1E1E1E),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Ввести штрихкод', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        title: const Text('Ввести штрихкод',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
         content: TextField(
           controller: controller,
           keyboardType: TextInputType.number,
@@ -310,8 +319,11 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
             hintStyle: const TextStyle(color: Colors.white30),
             filled: true,
             fillColor: const Color(0xFF2A2A2A),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none),
+            contentPadding:
+                const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           ),
           autofocus: true,
         ),
@@ -321,7 +333,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               controller.dispose();
               Navigator.pop(ctx);
             },
-            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
+            child: const Text('Скасувати',
+                style: TextStyle(color: Colors.white54)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -333,8 +346,39 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 _processBarcode(barcode);
               }
             },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+            style:
+                ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
             child: const Text('Пошук', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildCountSummary({
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: color.withAlpha(25),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: color.withAlpha(80)),
+      ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: TextStyle(
+                fontSize: 13, color: color, fontWeight: FontWeight.w600),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            value,
+            style: TextStyle(
+                fontSize: 24, color: color, fontWeight: FontWeight.bold),
           ),
         ],
       ),
@@ -354,72 +398,85 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-          leading: IconButton(
-            icon: const Icon(Icons.close, color: Colors.white),
-            onPressed: () {
-              final count = _sessionManager.products.length;
-              if (count == 0) {
-                final sid = _sessionManager.currentSessionId;
-                _sessionManager.clear();
-                if (sid != null) {
-                  context.read<SessionStorage>().deleteSession(sid);
-                }
-                Navigator.of(context).pop();
-                return;
+        leading: IconButton(
+          icon: const Icon(Icons.close, color: Colors.white),
+          onPressed: () {
+            final count = _sessionManager.products.length;
+            if (count == 0) {
+              final sid = _sessionManager.currentSessionId;
+              _sessionManager.clear();
+              if (sid != null) {
+                context.read<SessionStorage>().deleteSession(sid);
               }
-              showDialog(
-                context: context,
-                builder: (ctx) => AlertDialog(
-                  backgroundColor: const Color(0xFF1E1E1E),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-                  title: const Text('Відкласти переоблік?', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
-                  content: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            const Icon(Icons.inventory, size: 18, color: Colors.orangeAccent),
-                            const SizedBox(width: 6),
-                          Text('$count товарів', style: const TextStyle(color: Colors.white70, fontSize: 14)),
-                        ],
-                      ),
-                    ],
-                  ),
-                  actions: [
-                    TextButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        final nav = Navigator.of(context);
-                        await _saveSession();
-                        nav.pop();
-                      },
-                      child: const Text('Зберегти та вийти', style: TextStyle(color: Colors.orangeAccent, fontWeight: FontWeight.w600)),
-                    ),
-                    const SizedBox(height: 4),
-                    TextButton(
-                      onPressed: () async {
-                        Navigator.pop(ctx);
-                        final sessionId = _sessionManager.currentSessionId;
-                        final storage = context.read<SessionStorage>();
-                        final nav = Navigator.of(context);
-                        _sessionManager.clear();
-                        if (sessionId != null) {
-                          await storage.deleteSession(sessionId);
-                        }
-                        nav.pop();
-                      },
-                      child: const Text('Не зберігати', style: TextStyle(color: Colors.redAccent)),
-                    ),
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx),
-                      child: const Text('Продовжити', style: TextStyle(color: Colors.white54)),
+              Navigator.of(context).pop();
+              return;
+            }
+            showDialog(
+              context: context,
+              builder: (ctx) => AlertDialog(
+                backgroundColor: const Color(0xFF1E1E1E),
+                shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(20)),
+                title: const Text('Відкласти переоблік?',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18)),
+                content: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        const Icon(Icons.inventory,
+                            size: 18, color: Colors.orangeAccent),
+                        const SizedBox(width: 6),
+                        Text('$count товарів',
+                            style: const TextStyle(
+                                color: Colors.white70, fontSize: 14)),
+                      ],
                     ),
                   ],
                 ),
-              );
-            },
-          ),
+                actions: [
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final nav = Navigator.of(context);
+                      await _saveSession();
+                      nav.pop();
+                    },
+                    child: const Text('Зберегти та вийти',
+                        style: TextStyle(
+                            color: Colors.orangeAccent,
+                            fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(height: 4),
+                  TextButton(
+                    onPressed: () async {
+                      Navigator.pop(ctx);
+                      final sessionId = _sessionManager.currentSessionId;
+                      final storage = context.read<SessionStorage>();
+                      final nav = Navigator.of(context);
+                      _sessionManager.clear();
+                      if (sessionId != null) {
+                        await storage.deleteSession(sessionId);
+                      }
+                      nav.pop();
+                    },
+                    child: const Text('Не зберігати',
+                        style: TextStyle(color: Colors.redAccent)),
+                  ),
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Продовжити',
+                        style: TextStyle(color: Colors.white54)),
+                  ),
+                ],
+              ),
+            );
+          },
+        ),
         actions: [
           IconButton(
             icon: const Icon(Icons.list_alt, color: Colors.white),
@@ -429,20 +486,20 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
               final nav = Navigator.of(context);
               nav
                   .push(
-                    MaterialPageRoute(
-                      builder: (context) => RecountProductListScreen(
-                        products: products,
-                        sessionIds: widget.sessionIds,
-                      ),
-                    ),
-                  )
+                MaterialPageRoute(
+                  builder: (context) => RecountProductListScreen(
+                    products: products,
+                    sessionIds: widget.sessionIds,
+                  ),
+                ),
+              )
                   .then((result) {
-                    if (result == 'finish') {
-                      nav.pop();
-                    } else {
-                      _controller.start();
-                    }
-                  });
+                if (result == 'finish') {
+                  nav.pop();
+                } else {
+                  _controller.start();
+                }
+              });
             },
           ),
         ],
@@ -463,11 +520,15 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.videocam_off_outlined, size: 64, color: Color(0xFFCF6679)),
+                      const Icon(Icons.videocam_off_outlined,
+                          size: 64, color: Color(0xFFCF6679)),
                       const SizedBox(height: 16),
                       const Text(
                         'Камера недоступна',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 8),
                       const Text(
@@ -483,8 +544,10 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                         style: ElevatedButton.styleFrom(
                           backgroundColor: Colors.orangeAccent,
                           foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 24, vertical: 14),
                         ),
                       ),
                     ],
@@ -504,11 +567,13 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 child: AnimatedBuilder(
                   animation: _borderAnimation,
                   builder: (context, child) {
-                    final color = _hasError ? Colors.redAccent : Colors.orangeAccent;
+                    final color =
+                        _hasError ? Colors.redAccent : Colors.orangeAccent;
                     final w = _hasError ? 4.0 : _borderAnimation.value;
                     return CustomPaint(
                       size: Size(boxSize, boxSize),
-                      painter: _ScanCornersPainter(color: color, width: w, cornerSize: 30),
+                      painter: _ScanCornersPainter(
+                          color: color, width: w, cornerSize: 30),
                     );
                   },
                 ),
@@ -521,14 +586,18 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.black54,
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Text(
                       'Натисніть на екран для сканування',
-                      style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600),
                       textAlign: TextAlign.center,
                     ),
                   ),
@@ -541,7 +610,8 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 right: 0,
                 child: Center(
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 20, vertical: 10),
                     decoration: BoxDecoration(
                       color: Colors.orangeAccent.withAlpha(51),
                       borderRadius: BorderRadius.circular(30),
@@ -549,231 +619,215 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                     child: const Row(
                       mainAxisSize: MainAxisSize.min,
                       children: [
-                        SizedBox(width: 14, height: 14, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)),
+                        SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(
+                                strokeWidth: 2, color: Colors.white)),
                         SizedBox(width: 10),
-                        Text('Сканування...', style: TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600)),
+                        Text('Сканування...',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600)),
                       ],
                     ),
                   ),
                 ),
               ),
-            Positioned(
-              left: 24,
-              bottom: 48,
-              child: FloatingActionButton(
-                onPressed: _toggleTorch,
-                tooltip: _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
-                backgroundColor: _torchOn ? Colors.orangeAccent : Colors.grey,
-                child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
-              ),
-            ),
-            Positioned(
-              right: 24,
-              bottom: 48,
-              child: TextButton.icon(
-                onPressed: _showManualEntry,
-                icon: const Icon(Icons.keyboard_outlined, color: Colors.white70, size: 22),
-                label: const Text('Ввести', style: TextStyle(color: Colors.white70, fontSize: 14)),
-              ),
-            ),
-            if (_showProductPanel)
+            if (!_showProductPanel)
               Positioned(
-                bottom: 0,
+                left: 24,
+                bottom: 48,
+                child: FloatingActionButton(
+                  onPressed: _toggleTorch,
+                  tooltip:
+                      _torchOn ? 'Вимкнути ліхтарик' : 'Увімкнути ліхтарик',
+                  backgroundColor: _torchOn ? Colors.orangeAccent : Colors.grey,
+                  child: Icon(_torchOn ? Icons.flash_on : Icons.flash_off),
+                ),
+              ),
+            if (!_showProductPanel)
+              Positioned(
+                right: 24,
+                bottom: 48,
+                child: TextButton.icon(
+                  onPressed: _showManualEntry,
+                  icon: const Icon(Icons.keyboard_outlined,
+                      color: Colors.white70, size: 22),
+                  label: const Text('Ввести',
+                      style: TextStyle(color: Colors.white70, fontSize: 14)),
+                ),
+              ),
+            if (_showProductPanel)
+              AnimatedPositioned(
+                duration: const Duration(milliseconds: 220),
+                curve: Curves.easeOut,
+                bottom: MediaQuery.viewInsetsOf(context).bottom,
                 left: 0,
                 right: 0,
-                child: Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF1E1E1E),
-                    borderRadius: const BorderRadius.only(
-                      topLeft: Radius.circular(20),
-                      topRight: Radius.circular(20),
+                child: SafeArea(
+                  top: false,
+                  child: Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1E1E1E),
+                      borderRadius: const BorderRadius.only(
+                        topLeft: Radius.circular(28),
+                        topRight: Radius.circular(28),
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                            color: Colors.black.withAlpha(160),
+                            blurRadius: 20,
+                            offset: const Offset(0, -5)),
+                      ],
                     ),
-                    boxShadow: [
-                      BoxShadow(color: Colors.black.withAlpha(128), blurRadius: 16, offset: const Offset(0, -4)),
-                    ],
-                  ),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          const Icon(Icons.qr_code, size: 14, color: Colors.white38),
-                          const SizedBox(width: 4),
-                          Text(
-                            _currentBarcode ?? '',
-                            style: const TextStyle(color: Colors.white38, fontSize: 12),
-                          ),
-                          const Spacer(),
-                          SizedBox(
-                            width: 28, height: 28,
-                            child: IconButton(
-                              padding: EdgeInsets.zero,
-                              onPressed: _closeProductPanel,
-                              icon: const Icon(Icons.close, color: Colors.white54, size: 18),
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _productName ?? '',
-                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Colors.white),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withAlpha(25),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Text(
-                          '₴ ${_productPrice?.toStringAsFixed(2) ?? ''}',
-                          style: const TextStyle(fontSize: 13, color: Colors.green, fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: GestureDetector(
-                              onTap: () => _actualCountController.selection = TextSelection(
-                                baseOffset: 0,
-                                extentOffset: _actualCountController.text.length,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              width: 42,
+                              height: 42,
+                              decoration: BoxDecoration(
+                                color: Colors.green.withAlpha(38),
+                                shape: BoxShape.circle,
                               ),
+                              child: const Icon(Icons.check_circle,
+                                  color: Colors.greenAccent, size: 25),
+                            ),
+                            const SizedBox(width: 12),
+                            const Expanded(
+                              child: Text(
+                                'Товар відскановано',
+                                style: TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.white),
+                              ),
+                            ),
+                            IconButton(
+                              onPressed: _closeProductPanel,
+                              icon: const Icon(Icons.close,
+                                  color: Colors.white54),
+                              tooltip: 'Закрити',
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+                        Text(
+                          _productName ?? '',
+                          style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.w700,
+                              color: Colors.white),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            const Icon(Icons.qr_code,
+                                size: 16, color: Colors.white38),
+                            const SizedBox(width: 6),
+                            Expanded(
+                              child: Text(
+                                _currentBarcode ?? '',
+                                style: const TextStyle(
+                                    color: Colors.white54, fontSize: 13),
+                              ),
+                            ),
+                            Text(
+                              '₴ ${_productPrice?.toStringAsFixed(2) ?? ''}',
+                              style: const TextStyle(
+                                  fontSize: 15,
+                                  color: Colors.greenAccent,
+                                  fontWeight: FontWeight.w700),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 18),
+                        Row(
+                          children: [
+                            Expanded(
                               child: Container(
-                                padding: const EdgeInsets.all(10),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 12, vertical: 8),
                                 decoration: BoxDecoration(
-                                  color: Colors.blue.withAlpha(25),
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: Colors.blue.withAlpha(77)),
+                                  color: Colors.blue.withAlpha(30),
+                                  borderRadius: BorderRadius.circular(14),
+                                  border: Border.all(
+                                      color: Colors.blue.withAlpha(90)),
                                 ),
                                 child: Column(
                                   children: [
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        const Icon(Icons.edit_outlined, size: 14, color: Colors.blue),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'Фактично',
-                                          style: TextStyle(fontSize: 12, color: Colors.blue.shade200, fontWeight: FontWeight.w600),
-                                        ),
-                                      ],
-                                    ),
-                                    const SizedBox(height: 4),
+                                    Text('Фактично',
+                                        style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.blue.shade100,
+                                            fontWeight: FontWeight.w600)),
                                     TextField(
                                       controller: _actualCountController,
                                       keyboardType: TextInputType.number,
                                       textInputAction: TextInputAction.done,
-                                      onChanged: (value) => _updateActualCount(),
-                                      onSubmitted: (_) => FocusScope.of(context).unfocus(),
-                                      style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.white),
+                                      onTap: () => _actualCountController
+                                          .selection = TextSelection(
+                                        baseOffset: 0,
+                                        extentOffset:
+                                            _actualCountController.text.length,
+                                      ),
+                                      onChanged: (_) => _updateActualCount(),
+                                      onSubmitted: (_) =>
+                                          FocusScope.of(context).unfocus(),
+                                      style: const TextStyle(
+                                          fontSize: 30,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.white),
                                       textAlign: TextAlign.center,
-                                      decoration: InputDecoration(
-                                        filled: true,
-                                        fillColor: Colors.transparent,
-                                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8), borderSide: BorderSide.none),
-                                        contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                                      decoration: const InputDecoration(
+                                        isDense: true,
+                                        border: InputBorder.none,
+                                        contentPadding:
+                                            EdgeInsets.symmetric(vertical: 6),
                                       ),
                                     ),
                                   ],
                                 ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: Colors.orange.withAlpha(25),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(color: Colors.orange.withAlpha(77)),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    'Залишок',
-                                    style: TextStyle(fontSize: 12, color: Colors.orange, fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    _stockCount?.toString() ?? '0',
-                                    style: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: Colors.orangeAccent),
-                                  ),
-                                ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildCountSummary(
+                                label: 'Залишок',
+                                value: _stockCount?.toString() ?? '0',
+                                color: Colors.orangeAccent,
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: Container(
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color: (_actualCount ?? 0) >= (_stockCount ?? 0)
-                                    ? Colors.green.withAlpha(25)
-                                    : Colors.red.withAlpha(25),
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: (_actualCount ?? 0) >= (_stockCount ?? 0)
-                                      ? Colors.green.withAlpha(77)
-                                      : Colors.red.withAlpha(77),
-                                ),
-                              ),
-                              child: Column(
-                                children: [
-                                  const Text(
-                                    'Різниця',
-                                    style: TextStyle(fontSize: 12, color: Colors.white54, fontWeight: FontWeight.w600),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        (_actualCount ?? 0) > (_stockCount ?? 0)
-                                            ? Icons.arrow_upward
-                                            : (_actualCount ?? 0) < (_stockCount ?? 0)
-                                                ? Icons.arrow_downward
-                                                : Icons.remove,
-                                        size: 16,
-                                        color: (_actualCount ?? 0) > (_stockCount ?? 0)
-                                            ? Colors.green
-                                            : (_actualCount ?? 0) < (_stockCount ?? 0)
-                                                ? Colors.red
-                                                : Colors.grey,
-                                      ),
-                                      const SizedBox(width: 2),
-                                      Text(
-                                        _actualCount != null && _stockCount != null
-                                            ? (_actualCount! - _stockCount! >= 0
-                                                ? '+${_actualCount! - _stockCount!}'
-                                                : '${_actualCount! - _stockCount!}')
-                                            : '0',
-                                        style: TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold,
-                                          color: (_actualCount ?? 0) > (_stockCount ?? 0)
-                                              ? Colors.green
-                                              : (_actualCount ?? 0) < (_stockCount ?? 0)
-                                                  ? Colors.red
-                                                  : Colors.grey,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _buildCountSummary(
+                                label: 'Різниця',
+                                value:
+                                    _actualCount != null && _stockCount != null
+                                        ? (_actualCount! - _stockCount! >= 0
+                                            ? '+${_actualCount! - _stockCount!}'
+                                            : '${_actualCount! - _stockCount!}')
+                                        : '0',
+                                color: (_actualCount ?? 0) > (_stockCount ?? 0)
+                                    ? Colors.greenAccent
+                                    : (_actualCount ?? 0) < (_stockCount ?? 0)
+                                        ? Colors.redAccent
+                                        : Colors.white54,
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                    ],
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
                 ),
               ),
@@ -783,23 +837,33 @@ class _RecountNewScanScreenState extends State<RecountNewScanScreen>
                 left: 24,
                 right: 24,
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
+                  padding:
+                      const EdgeInsets.symmetric(vertical: 12, horizontal: 20),
                   decoration: BoxDecoration(
                     color: const Color(0xFF93000A),
                     borderRadius: BorderRadius.circular(25),
                     boxShadow: const [
-                      BoxShadow(color: Color(0xFFCF6679), blurRadius: 12, offset: Offset(0, 3)),
+                      BoxShadow(
+                          color: Color(0xFFCF6679),
+                          blurRadius: 12,
+                          offset: Offset(0, 3)),
                     ],
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      const Icon(Icons.error_outline, color: Color(0xFFCF6679), size: 22),
+                      const Icon(Icons.error_outline,
+                          color: Color(0xFFCF6679), size: 22),
                       const SizedBox(width: 10),
                       Flexible(
                         child: Text(
-                          _errorMessage.isEmpty ? 'Помилка сканування' : _errorMessage,
-                          style: const TextStyle(color: Color(0xFFFFDAD6), fontWeight: FontWeight.w600, fontSize: 14),
+                          _errorMessage.isEmpty
+                              ? 'Помилка сканування'
+                              : _errorMessage,
+                          style: const TextStyle(
+                              color: Color(0xFFFFDAD6),
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14),
                         ),
                       ),
                     ],
@@ -821,10 +885,12 @@ class _ScanOverlayClipper extends CustomClipper<Path> {
 
   @override
   Path getClip(Size size) {
-    final fullPath = Path()..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
+    final fullPath = Path()
+      ..addRect(Rect.fromLTWH(0, 0, size.width, size.height));
     final centerX = size.width / 2;
     final boxLeft = centerX - boxSize / 2;
-    final boxPath = Path()..addRect(Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize));
+    final boxPath = Path()
+      ..addRect(Rect.fromLTWH(boxLeft, boxTop, boxSize, boxSize));
     return Path.combine(PathOperation.difference, fullPath, boxPath);
   }
 
@@ -838,7 +904,8 @@ class _ScanCornersPainter extends CustomPainter {
   final double width;
   final double cornerSize;
 
-  _ScanCornersPainter({required this.color, required this.width, required this.cornerSize});
+  _ScanCornersPainter(
+      {required this.color, required this.width, required this.cornerSize});
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -852,14 +919,20 @@ class _ScanCornersPainter extends CustomPainter {
     canvas.drawLine(Offset(0, cornerSize), Offset.zero, paint);
     canvas.drawLine(Offset.zero, Offset(cornerSize, 0), paint);
     // Top-right
-    canvas.drawLine(Offset(size.width - cornerSize, 0), Offset(size.width, 0), paint);
-    canvas.drawLine(Offset(size.width, 0), Offset(size.width, cornerSize), paint);
+    canvas.drawLine(
+        Offset(size.width - cornerSize, 0), Offset(size.width, 0), paint);
+    canvas.drawLine(
+        Offset(size.width, 0), Offset(size.width, cornerSize), paint);
     // Bottom-left
-    canvas.drawLine(Offset(0, size.height - cornerSize), Offset(0, size.height), paint);
-    canvas.drawLine(Offset(0, size.height), Offset(cornerSize, size.height), paint);
+    canvas.drawLine(
+        Offset(0, size.height - cornerSize), Offset(0, size.height), paint);
+    canvas.drawLine(
+        Offset(0, size.height), Offset(cornerSize, size.height), paint);
     // Bottom-right
-    canvas.drawLine(Offset(size.width - cornerSize, size.height), Offset(size.width, size.height), paint);
-    canvas.drawLine(Offset(size.width, size.height), Offset(size.width, size.height - cornerSize), paint);
+    canvas.drawLine(Offset(size.width - cornerSize, size.height),
+        Offset(size.width, size.height), paint);
+    canvas.drawLine(Offset(size.width, size.height),
+        Offset(size.width, size.height - cornerSize), paint);
   }
 
   @override
