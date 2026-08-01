@@ -5,6 +5,8 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:intl/intl.dart';
 import 'package:flutter/services.dart' show rootBundle;
 
+import 'recount_pdf_data.dart';
+
 class PdfGenerator {
   static bool _isWomenProduct(Map<String, dynamic> product) {
     final name = (product['name']?.toString() ?? '').toLowerCase();
@@ -33,6 +35,7 @@ class PdfGenerator {
     required List<Map<String, dynamic>> products,
     required DateTime startTime,
     required DateTime endTime,
+    required String reportId,
   }) async {
     final pdf = pw.Document();
 
@@ -143,7 +146,13 @@ class PdfGenerator {
 
     final output = await getTemporaryDirectory();
     final file = File('${output.path}/recount_${DateTime.now().millisecondsSinceEpoch}.pdf');
-    return await file.writeAsBytes(await pdf.save());
+    final reportData = RecountPdfData(
+      reportId: reportId,
+      products: products,
+      startTime: startTime,
+      endTime: endTime,
+    );
+    return file.writeAsBytes(reportData.embedIn(await pdf.save()));
   }
 
   static String _formatReportPeriod(DateTime startTime, DateTime endTime) {

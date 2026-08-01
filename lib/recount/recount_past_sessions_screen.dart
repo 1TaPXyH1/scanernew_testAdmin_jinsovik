@@ -1,9 +1,13 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:printing/printing.dart';
 import 'package:provider/provider.dart';
 
 import '../services/session_storage.dart';
 import '../utils/pdf_generator.dart';
+import '../utils/recount_pdf_data.dart';
 
 class RecountPastSessionsScreen extends StatelessWidget {
   const RecountPastSessionsScreen({super.key});
@@ -53,6 +57,191 @@ class RecountPastSessionsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> mergeRecountPdfReports(BuildContext context) async {
+    final selection = await FilePicker.pickFiles(
+      type: FileType.custom,
+      allowedExtensions: const ['pdf'],
+      allowMultiple: true,
+      withData: true,
+    );
+    if (selection == null || !context.mounted) return;
+
+    if (selection.files.length < 2) {
+      _showMessage(context, 'Оберіть щонайменше два PDF-звіти.');
+      return;
+    }
+
+    final reports = <RecountPdfData>[];
+    final unsupportedFiles = <String>[];
+    for (final file in selection.files) {
+      final report = file.bytes == null
+          ? null
+          : RecountPdfData.tryExtract(file.bytes!);
+      if (report == null) {
+        unsupportedFiles.add(file.name);
+      } else {
+        reports.add(report);
+      }
+    }
+
+    if (unsupportedFiles.isNotEmpty) {
+      _showMessage(
+        context,
+        'Не вдалося прочитати: ${unsupportedFiles.join(', ')}. '
+        'Оберіть оригінальні PDF-звіти з застосунку.',
+      );
+      return;
+    }
+
+    final result = RecountPdfData.merge(reports);
+    if (result.duplicateReportIds.isNotEmpty) {
+      _showMessage(
+        context,
+        'Один і той самий PDF обрано кілька разів. Приберіть дублікати та спробуйте ще раз.',
+      );
+      return;
+    }
+    if (result.products.isEmpty) {
+      _showMessage(context, 'У вибраних PDF немає товарів для об’єднання.');
+      return;
+    }
+
+    if (result.conflictingBarcodes.isNotEmpty) {
+      final shouldContinue = await _confirmConflicts(context, result);
+      if (shouldContinue != true || !context.mounted) return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Dialog(
+        backgroundColor: Color(0xFF1E1E1E),
+        child: Padding(
+          padding: EdgeInsets.all(24),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                    strokeWidth: 2, color: Colors.orangeAccent),
+              ),
+              SizedBox(width: 16),
+              Text('Об’єднуємо PDF-звіти...',
+                  style: TextStyle(color: Colors.white)),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    try {
+      final mergedSessionId = 'MERGED_${DateTime.now().millisecondsSinceEpoch}';
+      final file = await PdfGenerator.generateRecountReport(
+        products: result.products,
+        startTime: result.startTime,
+        endTime: result.endTime,
+        reportId: mergedSessionId,
+      );
+      if (!context.mounted) return;
+      await context.read<SessionStorage>().addCompletedSession(
+            id: mergedSessionId,
+            products: result.products,
+            startTime: result.startTime,
+            endTime: result.endTime,
+          );
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      await _showMergedPdfReady(context, file);
+    } catch (_) {
+      if (!context.mounted) return;
+      Navigator.of(context, rootNavigator: true).pop();
+      _showMessage(context, 'Не вдалося об’єднати PDF-звіти. Спробуйте ще раз.');
+    }
+  }
+
+Future<bool?> _confirmConflicts(
+      BuildContext context, RecountPdfMergeResult result) {
+    final examples = result.conflictingBarcodes.take(3).join(', ');
+    return showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF272727),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('Є різні дані товару',
+            style: TextStyle(color: Colors.white)),
+        content: Text(
+          'Для ${result.conflictingBarcodes.length} штрихкодів відрізняються '
+          'ціна або залишок ($examples). Залишимо значення з першого PDF, '
+          'а кількість по факту складемо. Продовжити?',
+          style: const TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: const Text('Скасувати'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+            child: const Text('Продовжити'),
+          ),
+        ],
+      ),
+    );
+  }
+
+Future<void> _showMergedPdfReady(BuildContext context, File file) {
+    return showDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: const Color(0xFF1E1E1E),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: const Text('PDF-звіт об’єднано',
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.w700)),
+        content: const Text(
+          'Новий переоблік збережено в історії. Надішліть спільний PDF-звіт у зручний спосіб.',
+          style: TextStyle(color: Colors.white70),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext),
+            child: const Text('Готово'),
+          ),
+          ElevatedButton.icon(
+            onPressed: () => Printing.sharePdf(
+              bytes: file.readAsBytesSync(),
+              filename: 'merged_recount_report.pdf',
+            ),
+            icon: const Icon(Icons.send_rounded),
+            label: const Text('Надіслати PDF'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.orangeAccent,
+              foregroundColor: Colors.white,
+              elevation: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+void _showMessage(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: const Color(0xFF30363B),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
 }
 
 class _EmptySessions extends StatelessWidget {
@@ -161,6 +350,7 @@ class _SessionCard extends StatelessWidget {
                     products: session.products,
                     startTime: session.startTime,
                     endTime: session.endTime ?? DateTime.now(),
+                    reportId: session.id,
                   );
                   if (!context.mounted) return;
                   await Printing.sharePdf(

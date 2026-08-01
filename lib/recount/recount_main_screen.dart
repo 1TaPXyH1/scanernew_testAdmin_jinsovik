@@ -109,6 +109,25 @@ class RecountMainScreen extends StatelessWidget {
                   ),
                 ),
               ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => mergeRecountPdfReports(context),
+                  icon: const Icon(Icons.merge_type_rounded),
+                  label: const Text('Об’єднати PDF-звіти'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF30363B),
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shadowColor: Colors.transparent,
+                    minimumSize: const Size.fromHeight(54),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
             ],
           ),
         ),

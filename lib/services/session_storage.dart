@@ -129,6 +129,27 @@ class SessionStorage extends ChangeNotifier {
     }
   }
 
+  Future<String> addCompletedSession({
+    String? id,
+    required List<Map<String, dynamic>> products,
+    required DateTime startTime,
+    required DateTime endTime,
+  }) async {
+    final sessionId = id ?? 'MERGED_${DateTime.now().millisecondsSinceEpoch}';
+    _allSessions.add(
+      SavedSession(
+        id: sessionId,
+        startTime: startTime,
+        endTime: endTime,
+        status: 'completed',
+        products: List<Map<String, dynamic>>.from(products),
+      ),
+    );
+    await _save();
+    notifyListeners();
+    return sessionId;
+  }
+
   Future<void> deleteSession(String sessionId) async {
     _allSessions.removeWhere((s) => s.id == sessionId);
     if (_currentSessionId == sessionId) {

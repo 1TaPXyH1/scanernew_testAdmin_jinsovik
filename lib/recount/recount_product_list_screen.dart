@@ -406,6 +406,7 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
         products: products,
         startTime: reportStartTime,
         endTime: reportEndTime,
+        reportId: widget.sessionIds.join('_'),
       );
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
