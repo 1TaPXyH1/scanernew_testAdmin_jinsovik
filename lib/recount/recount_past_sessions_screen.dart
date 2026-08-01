@@ -159,7 +159,8 @@ class _SessionCard extends StatelessWidget {
                 onPressed: () async {
                   final file = await PdfGenerator.generateRecountReport(
                     products: session.products,
-                    sessionIds: [session.id],
+                    startTime: session.startTime,
+                    endTime: session.endTime ?? DateTime.now(),
                   );
                   if (!context.mounted) return;
                   await Printing.sharePdf(

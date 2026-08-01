@@ -70,11 +70,11 @@ class RecountSessionManager extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> completeSession() async {
+  Future<void> completeSession({DateTime? endTime}) async {
     if (_currentSessionId != null) {
       try {
         await _storage.saveProducts(_currentSessionId!, _products);
-        await _storage.completeSession(_currentSessionId!);
+        await _storage.completeSession(_currentSessionId!, endTime: endTime);
       } catch (e) {
         debugPrint('Помилка завершення сесії: $e');
       }

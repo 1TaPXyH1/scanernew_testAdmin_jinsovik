@@ -31,7 +31,8 @@ class PdfGenerator {
 
   static Future<File> generateRecountReport({
     required List<Map<String, dynamic>> products,
-    required List<String> sessionIds,
+    required DateTime startTime,
+    required DateTime endTime,
   }) async {
     final pdf = pw.Document();
 
@@ -61,10 +62,10 @@ class PdfGenerator {
         build: (pw.Context context) {
           return [
             pw.Container(
-              padding: const pw.EdgeInsets.all(20),
+              padding: const pw.EdgeInsets.all(14),
               decoration: const pw.BoxDecoration(
                 color: PdfColors.grey800,
-                borderRadius: pw.BorderRadius.all(pw.Radius.circular(12)),
+                borderRadius: pw.BorderRadius.all(pw.Radius.circular(10)),
               ),
               child: pw.Column(
                 crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -73,26 +74,18 @@ class PdfGenerator {
                     'ЗВІТ ПЕРЕОБЛІКУ',
                     style: pw.TextStyle(
                       font: otoiwoBoldFont,
-                      fontSize: 28,
+                      fontSize: 20,
                       fontWeight: pw.FontWeight.bold,
                       color: PdfColors.white,
                     ),
                   ),
-                  pw.SizedBox(height: 8),
+                  pw.SizedBox(height: 5),
                   pw.Text(
-                    'ID сесії: ${sessionIds.join(', ')}',
+                    _formatReportPeriod(startTime, endTime),
                     style: pw.TextStyle(
                       font: otoiwoFont,
-                      fontSize: 14,
-                      color: PdfColors.white,
-                    ),
-                  ),
-                  pw.Text(
-                    'Дата: ${DateFormat('dd.MM.yyyy HH:mm').format(DateTime.now())}',
-                    style: pw.TextStyle(
-                      font: otoiwoFont,
-                      fontSize: 14,
-                      color: PdfColors.white,
+                      fontSize: 12,
+                      color: PdfColors.grey300,
                     ),
                   ),
                 ],
@@ -134,12 +127,37 @@ class PdfGenerator {
             ..._buildGroupedProductTables(products, otoiwoFont, otoiwoBoldFont),
           ];
         },
+        footer: (pw.Context context) => pw.Align(
+          alignment: pw.Alignment.centerRight,
+          child: pw.Text(
+            'Сторінка ${context.pageNumber} з ${context.pagesCount}',
+            style: pw.TextStyle(
+              font: otoiwoFont,
+              fontSize: 8,
+              color: PdfColors.grey600,
+            ),
+          ),
+        ),
       ),
     );
 
     final output = await getTemporaryDirectory();
     final file = File('${output.path}/recount_${DateTime.now().millisecondsSinceEpoch}.pdf');
     return await file.writeAsBytes(await pdf.save());
+  }
+
+  static String _formatReportPeriod(DateTime startTime, DateTime endTime) {
+    final dateFormat = DateFormat('dd.MM.yyyy');
+    final timeFormat = DateFormat('HH:mm');
+    final isSameDay = startTime.year == endTime.year &&
+        startTime.month == endTime.month &&
+        startTime.day == endTime.day;
+    if (isSameDay) {
+      return '${dateFormat.format(startTime)} · '
+          '${timeFormat.format(startTime)}–${timeFormat.format(endTime)}';
+    }
+    return '${DateFormat('dd.MM.yyyy HH:mm').format(startTime)} — '
+        '${DateFormat('dd.MM.yyyy HH:mm').format(endTime)}';
   }
 
   static pw.Widget _buildSummaryRow(
@@ -234,7 +252,7 @@ class PdfGenerator {
               _buildTableCell(_toInt(p['stock_count']).toString(), font: font),
               _buildTableCell(_toInt(p['actual_count']).toString(), font: font),
               _buildTableCell(
-                diff == 0 ? '' : diff.toString(),
+                diff > 0 ? '+$diff' : (diff == 0 ? '' : diff.toString()),
                 font: boldFont,
                 color: diff > 0 ? PdfColors.green : (diff < 0 ? PdfColors.red : PdfColors.black),
               ),

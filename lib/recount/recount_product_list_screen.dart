@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:printing/printing.dart';
 
+import '../services/session_storage.dart';
 import '../utils/pdf_generator.dart';
 import 'recount_session_manager.dart';
 
@@ -398,13 +399,19 @@ class _RecountProductListScreenState extends State<RecountProductListScreen> {
     );
 
     try {
+      final reportEndTime = DateTime.now();
+      final reportStartTime =
+          context.read<SessionStorage>().currentSession?.startTime ?? reportEndTime;
       final file = await PdfGenerator.generateRecountReport(
         products: products,
-        sessionIds: widget.sessionIds,
+        startTime: reportStartTime,
+        endTime: reportEndTime,
       );
       if (!mounted) return;
       Navigator.of(context, rootNavigator: true).pop();
-      await context.read<RecountSessionManager>().completeSession();
+      await context
+          .read<RecountSessionManager>()
+          .completeSession(endTime: reportEndTime);
       if (!mounted) return;
       _showPdfReadyDialog(file);
     } catch (_) {

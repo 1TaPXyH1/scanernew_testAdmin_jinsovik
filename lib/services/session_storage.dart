@@ -111,13 +111,13 @@ class SessionStorage extends ChangeNotifier {
     }
   }
 
-  Future<void> completeSession(String sessionId) async {
+  Future<void> completeSession(String sessionId, {DateTime? endTime}) async {
     final idx = _allSessions.indexWhere((s) => s.id == sessionId);
     if (idx >= 0) {
       _allSessions[idx] = SavedSession(
         id: _allSessions[idx].id,
         startTime: _allSessions[idx].startTime,
-        endTime: DateTime.now(),
+        endTime: endTime ?? DateTime.now(),
         status: 'completed',
         products: _allSessions[idx].products,
       );
