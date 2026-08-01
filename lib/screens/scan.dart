@@ -146,51 +146,122 @@ class _ScanScreenState extends State<ScanScreen>
       _readyToScan = true;
     });
     final controller = TextEditingController();
-    showDialog(
+    showModalBottomSheet(
       context: context,
-      builder: (ctx) => AlertDialog(
-        backgroundColor: const Color(0xFF1E1E1E),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: const Text('Ввести штрихкод', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-        content: TextField(
-          controller: controller,
-          keyboardType: TextInputType.number,
-          style: const TextStyle(color: Colors.white, fontSize: 18),
-          decoration: InputDecoration(
-            hintText: '2107002621030',
-            hintStyle: const TextStyle(color: Colors.white30),
-            filled: true,
-            fillColor: const Color(0xFF2A2A2A),
-            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide.none),
-            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          ),
-          autofocus: true,
+      isScrollControlled: true,
+      backgroundColor: const Color(0xFF1E1E1E),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (sheetContext) => Padding(
+        padding: EdgeInsets.fromLTRB(
+          20,
+          12,
+          20,
+          20 + MediaQuery.viewInsetsOf(sheetContext).bottom,
         ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              controller.dispose();
-              Navigator.pop(ctx);
-            },
-            child: const Text('Скасувати', style: TextStyle(color: Colors.white54)),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              final code = controller.text.trim();
-              controller.dispose();
-              if (code.isNotEmpty) {
-                Navigator.pop(ctx);
-                Navigator.of(context).pushReplacement(
-                  MaterialPageRoute(
-                    builder: (_) => ResultsScreen(barcode: code, selectedStore: widget.selectedStore),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 38,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.white24,
+                  borderRadius: BorderRadius.circular(99),
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                width: 50,
+                height: 50,
+                decoration: BoxDecoration(
+                  color: Colors.orangeAccent.withAlpha(32),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.keyboard_outlined,
+                  color: Colors.orangeAccent,
+                  size: 26,
+                ),
+              ),
+              const SizedBox(height: 12),
+              const Text(
+                'Ввести штрихкод',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Введіть цифри зі штрихкоду товару',
+                style: TextStyle(color: Colors.white60, fontSize: 14),
+              ),
+              const SizedBox(height: 20),
+              TextField(
+                controller: controller,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _searchManualCode(controller, sheetContext),
+                autofocus: true,
+                style: const TextStyle(color: Colors.white, fontSize: 18),
+                decoration: InputDecoration(
+                  hintText: '2107002621030',
+                  hintStyle: const TextStyle(color: Colors.white30),
+                  prefixIcon: const Icon(Icons.barcode_reader, color: Colors.white54),
+                  filled: true,
+                  fillColor: const Color(0xFF2A2A2A),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                    borderSide: BorderSide.none,
                   ),
-                );
-              }
-            },
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
-            child: const Text('Пошук', style: TextStyle(color: Colors.white)),
+                  contentPadding:
+                      const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                ),
+              ),
+              const SizedBox(height: 14),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () => _searchManualCode(controller, sheetContext),
+                  icon: const Icon(Icons.search_rounded),
+                  label: const Text('Пошук'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orangeAccent,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    minimumSize: const Size.fromHeight(52),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                ),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(sheetContext),
+                style: TextButton.styleFrom(foregroundColor: Colors.white60),
+                child: const Text('Скасувати'),
+              ),
+            ],
           ),
-        ],
+        ),
+      ),
+    ).whenComplete(controller.dispose);
+  }
+
+  void _searchManualCode(
+      TextEditingController controller, BuildContext sheetContext) {
+    final code = controller.text.trim();
+    if (code.isEmpty) return;
+
+    Navigator.pop(sheetContext);
+    Navigator.of(context).pushReplacement(
+      MaterialPageRoute(
+        builder: (_) =>
+            ResultsScreen(barcode: code, selectedStore: widget.selectedStore),
       ),
     );
   }
@@ -227,33 +298,53 @@ class _ScanScreenState extends State<ScanScreen>
               scanWindow: scanWindow,
               onDetect: _onBarcodeDetected,
               errorBuilder: (context, error) => Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(32),
+                child: Container(
+                  margin: const EdgeInsets.all(24),
+                  padding: const EdgeInsets.fromLTRB(24, 28, 24, 20),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF1E1E1E),
+                    borderRadius: BorderRadius.circular(24),
+                    border: Border.all(color: Colors.white12),
+                  ),
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Icon(Icons.videocam_off_outlined, size: 64, color: Color(0xFFCF6679)),
-                      const SizedBox(height: 16),
+                      Container(
+                        width: 60,
+                        height: 60,
+                        decoration: const BoxDecoration(
+                          color: Color(0x1FCF6679),
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(Icons.videocam_off_outlined,
+                            size: 30, color: Color(0xFFCF6679)),
+                      ),
+                      const SizedBox(height: 18),
                       const Text(
                         'Камера недоступна',
-                        style: TextStyle(color: Colors.white, fontSize: 18, fontWeight: FontWeight.bold),
+                        style: TextStyle(color: Colors.white, fontSize: 20, fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 8),
                       const Text(
-                        'Надайте дозвіл на камеру в налаштуваннях\nабо переконайтесь що вона не зайнята',
+                        'Надайте дозвіл на камеру в налаштуваннях\nабо переконайтеся, що вона не зайнята.',
                         style: TextStyle(color: Colors.white60, fontSize: 14),
                         textAlign: TextAlign.center,
                       ),
-                      const SizedBox(height: 24),
-                      ElevatedButton.icon(
-                        onPressed: () => controller.start(),
-                        icon: const Icon(Icons.refresh, size: 20),
-                        label: const Text('Спробувати знову'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.orangeAccent,
-                          foregroundColor: Colors.white,
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
+                      const SizedBox(height: 22),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => controller.start(),
+                          icon: const Icon(Icons.refresh_rounded),
+                          label: const Text('Спробувати знову'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.orangeAccent,
+                            foregroundColor: Colors.white,
+                            elevation: 0,
+                            minimumSize: const Size.fromHeight(50),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                          ),
                         ),
                       ),
                     ],

@@ -240,80 +240,140 @@ class _ResultsScreenState extends State<ResultsScreen> {
       );
 
   Widget _buildErrorScreen() {
+    final canRetry = _errorType != _ErrorType.notFound;
+    final isNotFound = _errorType == _ErrorType.notFound;
     final isNetwork = _errorType == _ErrorType.network;
-    final icon = isNetwork ? Icons.cloud_off : Icons.search_off;
-    final title = isNetwork
-        ? (_errorMessage ?? 'Помилка з\'єднання')
-        : 'Товар зі штрихкодом\n${widget.barcode}\nне знайдено';
+    final icon = isNotFound
+        ? Icons.search_off_rounded
+        : isNetwork
+            ? Icons.cloud_off_rounded
+            : Icons.sync_problem_rounded;
+    final color = isNotFound ? Colors.orangeAccent : const Color(0xFFCF6679);
+    final title = isNotFound
+        ? 'Товар не знайдено'
+        : isNetwork
+            ? 'Немає з\'єднання'
+            : 'Тимчасова помилка';
+    final description = isNotFound
+        ? 'Перевірте цифри або відскануйте штрихкод ще раз.'
+        : (_errorMessage ?? 'Спробуйте виконати пошук ще раз.');
 
     return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(24),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 80, color: const Color(0xFFCF6679)),
-            const SizedBox(height: 20),
-            Text(
-              title,
-              style: const TextStyle(color: Colors.white70, fontSize: 16),
-              textAlign: TextAlign.center,
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(20),
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 420),
+          child: Container(
+            padding: const EdgeInsets.fromLTRB(20, 28, 20, 16),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1E1E1E),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(color: Colors.white12),
             ),
-            const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
               children: [
-                if (isNetwork) ...[
-                  ElevatedButton.icon(
-                    onPressed: () {
-                      setState(() {
-                        isLoading = true;
-                        _errorType = _ErrorType.none;
-                      });
-                      fetchProductData();
-                    },
-                    icon: const Icon(Icons.refresh, size: 20),
-                    label: const Text('Повторити'),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.orangeAccent,
-                      foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                Container(
+                  width: 64,
+                  height: 64,
+                  decoration: BoxDecoration(
+                    color: color.withAlpha(28),
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(icon, size: 32, color: color),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                  ),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  description,
+                  style: const TextStyle(color: Colors.white60, fontSize: 14),
+                  textAlign: TextAlign.center,
+                ),
+                if (isNotFound) ...[
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF292929),
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      children: [
+                        const Text('Штрихкод',
+                            style: TextStyle(
+                                color: Colors.white54, fontSize: 12)),
+                        const SizedBox(height: 4),
+                        Text(widget.barcode,
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w600)),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 12),
                 ],
-                ElevatedButton.icon(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            ScanScreen(selectedStore: widget.selectedStore)),
+                const SizedBox(height: 24),
+                if (canRetry) ...[
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          isLoading = true;
+                          _errorType = _ErrorType.none;
+                        });
+                        fetchProductData();
+                      },
+                      icon: const Icon(Icons.refresh_rounded),
+                      label: const Text('Спробувати ще раз'),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orangeAccent,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        minimumSize: const Size.fromHeight(52),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14),
+                        ),
+                      ),
+                    ),
                   ),
-                  icon: const Icon(Icons.qr_code_scanner, size: 20),
-                  label: const Text('Сканувати ще'),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.orange.shade700,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                  const SizedBox(height: 8),
+                ],
+                SizedBox(
+                  width: double.infinity,
+                  child: OutlinedButton.icon(
+                    onPressed: () => Navigator.of(context).pushReplacement(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            ScanScreen(selectedStore: widget.selectedStore),
+                      ),
+                    ),
+                    icon: const Icon(Icons.qr_code_scanner_rounded),
+                    label: const Text('Сканувати ще'),
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: Colors.white,
+                      side: const BorderSide(color: Colors.white24),
+                      minimumSize: const Size.fromHeight(50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            if (!isNetwork)
-              Padding(
-                padding: const EdgeInsets.only(top: 12),
-                child: TextButton.icon(
-                  onPressed: () => Navigator.of(context).pushReplacement(
-                    MaterialPageRoute(
-                        builder: (_) =>
-                            ScanScreen(selectedStore: widget.selectedStore)),
-                  ),
-                  icon: const Icon(Icons.keyboard_outlined, size: 18, color: Colors.white54),
-                  label: const Text('Ввести інший штрихкод', style: TextStyle(color: Colors.white54)),
-                ),
-              ),
-          ],
+          ),
         ),
       ),
     );
@@ -497,6 +557,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF30363B),
                 foregroundColor: Colors.white,
+                elevation: 0,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
@@ -515,6 +577,8 @@ class _ResultsScreenState extends State<ResultsScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orangeAccent,
                 foregroundColor: Colors.white,
+                elevation: 0,
+                shadowColor: Colors.transparent,
                 shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12)),
               ),
