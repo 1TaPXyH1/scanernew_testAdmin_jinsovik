@@ -65,12 +65,17 @@ class BarcodeScannerApp extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(15),
             ),
-            elevation: 6,
+            elevation: 0,
             backgroundColor: Colors.blueAccent,
-            shadowColor: const Color.fromARGB(153, 69, 161, 255),
+            shadowColor: Colors.transparent,
             textStyle: const TextStyle(fontWeight: FontWeight.bold),
             minimumSize: const Size(200, 50),
           ),
+        ),
+        snackBarTheme: const SnackBarThemeData(
+          backgroundColor: Color(0xFF30363B),
+          contentTextStyle: TextStyle(color: Colors.white),
+          actionTextColor: Colors.orangeAccent,
         ),
         textTheme: const TextTheme(
           bodyLarge: TextStyle(
